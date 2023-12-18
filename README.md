@@ -25,17 +25,25 @@ raise an issue or send an email to <swd_studio@outlook.com>
 
 更新说明：
 1.1.0 rc1 
+
 在文件分享及下载窗口将回车与提交按钮绑定
+
 提供下拉列表框选择不同的用户
 
 1.0.2
+
 在获取的IP为127.0.0.1时提示检查网络连接
+
 允许自定义下载路径
+
 调整消息输入框大小
 
 
 开发环境：
 系统：Windows 7
+
 Python解释器：CPython 3.8.6rc1 for Windows（x64）
+
 C编译器：GCC 8.1.0 for Windows(x64)
+
 swdlc.py是SWD Studio开发的Python库，以GNU-GPLv3协议发布
