@@ -13,7 +13,7 @@
 输入文件来源的IP后缀和文件分享代码即可下载
 注意：由于此软件是去中心化的，没有服务器，如果您对分享的文件作了修改/删除等操作会使其他用户的下载收到影响（下载到更新的版本或无法下载），关闭此软件也会使文件无法下载
 
-SWDChat是由SWD Studio以GNU GPLv3协议于202312010发布的软件
+SWDChat是由SWD Studio以GNU GPLv3协议于20231215发布的软件
 
 了解更多关于SWD Studio的产品可以访问<http://swd-go.ysepan.com/>或<https://github.com/swdstudio>
 
@@ -21,9 +21,14 @@ SWDChat是由SWD Studio以GNU GPLv3协议于202312010发布的软件
 
 raise an issue or send an email to<swd_studio@outlook.com>
 
-程序版本号为1.0.2
+程序版本号为1.1.0rc1
 
 更新说明：
+1.1.0 rc1 
+在文件分享及下载窗口将回车与提交按钮绑定
+提供下拉列表框选择不同的用户
+
+1.0.2
 在获取的IP为127.0.0.1时提示检查网络连接
 允许自定义下载路径
 调整消息输入框大小
@@ -32,5 +37,5 @@ raise an issue or send an email to<swd_studio@outlook.com>
 开发环境：
 系统：Windows 7
 Python解释器：CPython 3.8.6rc1 for Windows（x64）
-C编译器：GCC for Windows(x64)
+C编译器：GCC 8.1.0 for Windows(x64)
 swdlc.py是SWD Studio开发的Python库，以GNU-GPLv3协议发布
