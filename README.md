@@ -11,9 +11,9 @@
 注意：由于此软件是去中心化的，没有服务器，如果您对分享的文件作了修改/删除等操作会使其他用户的下载收到影响（下载到更新的版本或无法下载），关闭此软件也会使文件无法下载
 
 SWDChat是由SWD Studio以GNU GPLv3协议于202312010发布的软件
-了解更多关于SWD Studio的产品可以访问<http://swd-go.ysepan.com/>或<github.com/swdstudio>
+了解更多关于SWD Studio的产品可以访问<http://swd-go.ysepan.com/>或<https://github.com/swdstudio>
 关于此应用的问题？
-raise an issue or send an email to<swd_studio@outlook>.com>
+raise an issue or send an email to<swd_studio@outlook.com>
 
 程序版本号为1.0.2
 
