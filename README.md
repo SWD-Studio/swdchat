@@ -32,5 +32,5 @@ raise an issue or send an email to<swd_studio@outlook.com>
 开发环境：
 系统：Windows 7
 Python解释器：CPython 3.8.6rc1 for Windows（x64）
-
+C编译器：GCC for Windows(x64)
 swdlc.py是SWD Studio开发的Python库，以GNU-GPLv3协议发布
