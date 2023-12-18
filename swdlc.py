@@ -13,9 +13,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.yespan.com.
-#20231210
-#类型注释
-#添加函数downpath(path=None),用于指定默认下载目录,path为None则返回默认目录
+#20231213
+#bugs fix
 import socket
 from json import dumps,loads
 import os
@@ -41,6 +40,7 @@ fmap={}#code:fpath
 class SHRH(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path[0:7]=='/sdown/':
+            f=None
             code=self.path.split('/')[2]
             ucode=unquote(code)
             if ucode not in fmap:
@@ -57,7 +57,7 @@ class SHRH(BaseHTTPRequestHandler):
                 self.send_error(HTTPStatus.NOT_FOUND,'File not found.')
                 try:
                     f.close()
-                except UnboundLocalError:
+                except (UnboundLocalError,AttributeError):
                     pass
             if f:
                 try:

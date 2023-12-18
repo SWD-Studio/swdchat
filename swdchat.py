@@ -28,8 +28,11 @@ from os import system
 from time import sleep
 from urllib.parse import quote
 from urllib.error import HTTPError,URLError
+from collections import deque
+um={}#user msg
+ul=set()#userlist
 port=36144
-version='1.0.2'
+version='1.1.0rc1'
 if lc.getip()=='127.0.0.1':
     print('程序无法启动,请检查网络连接.')
     system('pause>nul')
@@ -44,7 +47,8 @@ fpa=Frame(w)
 fda=Frame(w)
 fsend=Frame(w)
 pa=Entry(fpa)
-da=Entry(fda)
+da=Combobox(fda)
+da['value']=()
 msg=Entry(fsend)
 fdp=Frame(w)
 ldp=Label(fdp,text='下载路径:')
@@ -54,7 +58,7 @@ mtext.tag_config('orange',foreground='orange')#default_user
 mtext.tag_config('blue',foreground='blue')#received
 mtext.tag_config('red',foreground='red')
 lpa=Label(fpa,text='IP前缀:')
-lda=Label(fda,text='默认用户IP后缀:')
+lda=Label(fda,text='用户IP后缀:')
 share=ST(w,state='disabled')
 whnd = ctypes.windll.kernel32.GetConsoleWindow()
 if whnd != 0:
@@ -78,7 +82,7 @@ def opensharewin():
             return
         ep.delete(0,'end')
         ep.insert(0,fn)
-    def submit():
+    def submit(*a):
         if ec.get()=='' or ep.get()=='':
             return
         lc.share(ec.get(),ep.get())
@@ -89,6 +93,7 @@ def opensharewin():
         lc.rmshare(ec.get())
         destroy()
     sw=Tk()
+    sw.bind("<Return>",submit)
     sw.title('文件分享')
     sw.update()
     sw.attributes('-topmost',1)
@@ -114,12 +119,20 @@ def opensharewin():
 def click(*a):
     try:
         s=msg.get()
-        if s[0]!=' ':
-            sendmsg(s,da.get())
+        if s=='' or da.get=='':
+            return
+        sendmsg(s,da.get())
+        plen=len(pa.get())
+        s=('[%s->%s]%s\n'
+            %(lc.getip()[plen+1:],da.get(),s)).replace('..','.')
+        if da.get() not in ul:
+            um[da.get()]=[s,]
+            ul.add(da.get())
+            da['value']=tuple(ul)
         else:
-            t=s[1:].split(maxsplit=1)
-            sendmsg(t[1],t[0])
+            um[da.get()].append(s)
         msg.delete(0,'end')
+        csd()
     except Exception as e:
         showerror('ERROR',e)
 def setpath():
@@ -133,10 +146,6 @@ def sendmsg(s,no):
         raise SyntaxError
     lc.send((lc.getip(),s),(pa.get()+'.'+no).replace('..','.'),str(port))
     plen=len(pa.get())
-    mtext.config(state='normal')
-    mtext.insert(1.0,('[%s->%s]%s\n'
-                      %(lc.getip()[plen+1:],no,s)).replace('..','.'))
-    mtext.config(state='disabled')
 def sharedown():
     def downth():
         pb=Progressbar(sw)
@@ -153,7 +162,7 @@ def sharedown():
         except (HTTPError,URLError) as e:
             le=Label(sw,text=e)
             le.pack()
-    def submit():
+    def submit(*a):
         global sw
         sub.config(state='disabled')
         ec.config(state='disabled')
@@ -165,6 +174,7 @@ def sharedown():
     sw=Tk()
     sw.title('文件下载')
     sw.update()
+    sw.bind("<Return>",submit)
     sw.attributes('-topmost',1)
     fcode=Frame(sw)
     fpath=Frame(sw)
@@ -187,14 +197,16 @@ def receive(obj):
     sth=Thread(daemon=True,target=info)
     sth.start()
     plen=len(pa.get())
-    mtext.config(state='normal')
-    mtext.insert(1.0,
-                 ('[%s->%s]%s\n'%
-                 (obj[0][plen+1:],lc.getip()[plen+1:],obj[1])).replace('..','.'),
-                 'blue')
-    if obj[0][plen:]==da.get() or obj[0][plen+1:]==da.get():
-        mtext.insert(1.0,'[*]','orange')
-    mtext.config(state='disabled')
+    s=('[%s->%s]%s\n'%
+        (obj[0][plen+1:],lc.getip()[plen+1:],obj[1])).replace('..','.')
+    if obj[0][plen+1:] not in ul:
+        um[obj[0][plen+1:]]=[s,]
+        ul.add(obj[0][plen+1:])
+        da['value']=tuple(ul)
+    else:
+        um[obj[0][plen+1:]].append(s)
+    if da.get()==obj[0][plen+1:]:
+        csd()
 b=Button(fsend,text='发送',command=click)
 sharef=Frame(w)
 def osws():
@@ -209,7 +221,19 @@ def sdf():
     sdfth=Thread(daemon=True,target=setpath)
     sdfth.start()
 bf=Button(w,text='设置下载路径',command=sdf)
+def csd(*a):
+    un=da.get()
+    plen=len(pa.get())
+    mtext.config(state='normal')
+    mtext.delete(1.0,'end')
+    for i in um[un]:
+        if i[1:i.find('->')]!=lc.getip()[plen+1:]:
+            mtext.insert(1.0,i,'blue')
+        else:
+            mtext.insert(1.0,i)
+    mtext.config(state='disabled')
 w.bind("<Return>",click)
+w.bind("<<ComboboxSelected>>",csd)
 lpa.pack(side='left')
 pa.pack(side='right')
 fpa.pack()
