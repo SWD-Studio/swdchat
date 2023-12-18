@@ -15,11 +15,11 @@
 
 SWDChat是由SWD Studio以GNU GPLv3协议于20231215发布的软件
 
-了解更多关于SWD Studio的产品可以访问<http://swd-go.ysepan.com/>或<https://github.com/swdstudio>
+了解更多关于SWD Studio的产品可以访问 <http://swd-go.ysepan.com/> 或 <https://github.com/swdstudio>
 
 关于此应用的问题？
 
-raise an issue or send an email to<swd_studio@outlook.com>
+raise an issue or send an email to <swd_studio@outlook.com>
 
 程序版本号为1.1.0rc1
 
