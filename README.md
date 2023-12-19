@@ -26,7 +26,6 @@
 
 SWDChat是由SWD Studio以GNU GPLv3协议于20231215发布的软件
 
-了解更多关于SWD Studio的产品可以访问 <http://swd-go.ysepan.com/> 或 <https://github.com/swdstudio>
 
 ### 关于此应用的问题？
 
@@ -62,6 +61,6 @@ swdlc.py是SWD Studio开发的Python库，以GNU-GPLv3协议发布
 ### 支持我们
 尝试使用我们的更多产品
 
-欢迎访问[SWD Studio Github](https://github.com/swdstudio "访问我们的github")和[SWD Studio Website](http://swd-go.ysepan.com"访问我们的国内下载站")
+欢迎访问[SWD Studio Github](https://github.com/swdstudio "访问我们的github")和[SWD Studio Website](http://swd-go.ysepan.com" 访问我们的国内下载站")
 
 **Pull requests** and **raise issue** is welcomed,**让我们一起把这个开源软件做得更好**
