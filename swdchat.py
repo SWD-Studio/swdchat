@@ -29,43 +29,61 @@ from time import sleep
 from urllib.parse import quote
 from urllib.error import HTTPError,URLError
 from collections import deque
-um={}#user msg
-ul=set()#userlist
+uf={}#user frame
+ust={}#user ST
 port=36144
-version='1.1.0rc1'
+version='1.1.0rc2'
 if lc.getip()=='127.0.0.1':
     print('程序无法启动,请检查网络连接.')
     system('pause>nul')
 if lc.init(port):
     print('端口被占用,程序无法启动.')
     system('pause>nul')
-w=Tk()
-w.title('SWDChat %s'%version)
-w.update()
-w.geometry('400x650')
+mw=Tk()#main window
+mw.title('SWDChat %s'%version)
+mw.update()
+mw.geometry('400x650')
+mw.resizable(0,0)
+style1=Style()
+style1.configure('my1.TNotebook', tabposition='n')
+mn=Notebook(mw,style='my1.TNotebook')#main notebook
+w=Frame(mw,relief='ridge',borderwidth=1)
+fw=Frame(mw,relief='ridge',borderwidth=1)#file window
+style2=Style()
+style2.configure('my.TNotebook', tabposition='wn')
+umn=Notebook(w,style='my.TNotebook')#user msg notebook
+aboutf=Frame(w)
+aboutmt=ST(aboutf)
+aboutmt.tag_config('red',foreground='red')
+msgf=Frame(w)
 fpa=Frame(w)
 fda=Frame(w)
 fsend=Frame(w)
 pa=Entry(fpa)
-da=Combobox(fda)
-da['value']=()
+da=Entry(fda)
 msg=Entry(fsend)
-fdp=Frame(w)
+fdp=Frame(fw)
 ldp=Label(fdp,text='下载路径:')
 edp=Entry(fdp,state='disabled')
-mtext=ST(w,state='disabled')
-mtext.tag_config('orange',foreground='orange')#default_user
-mtext.tag_config('blue',foreground='blue')#received
-mtext.tag_config('red',foreground='red')
 lpa=Label(fpa,text='IP前缀:')
 lda=Label(fda,text='用户IP后缀:')
-share=ST(w,state='disabled')
+share=ST(fw,state='disabled')
 whnd = ctypes.windll.kernel32.GetConsoleWindow()
 if whnd != 0:
     ctypes.windll.user32.ShowWindow(whnd, 0)
     ctypes.windll.kernel32.CloseHandle(whnd)
 showinfo=ctypes.WinDLL('./showinfo.dll')
 info=showinfo.info
+def cteframe(da):
+    try:
+        return uf[str(da)]
+    except Exception:
+        pass
+    msgf=uf[str(da)]=Frame(w)
+    mtext=ust[str(da)]=ST(msgf,state='disabled')
+    mtext.tag_config('blue',foreground='blue')#received
+    mtext.pack(fill=BOTH,expand=True)
+    return msgf
 def opensharewin():
     def destroy():
         fmap=lc.fmap
@@ -123,16 +141,15 @@ def click(*a):
             return
         sendmsg(s,da.get())
         plen=len(pa.get())
-        s=('[%s->%s]%s\n'
-            %(lc.getip()[plen+1:],da.get(),s)).replace('..','.')
-        if da.get() not in ul:
-            um[da.get()]=[s,]
-            ul.add(da.get())
-            da['value']=tuple(ul)
-        else:
-            um[da.get()].append(s)
+        s=('[%s]%s\n'
+            %(lc.getip()[plen+1:],s)).replace('..','.')
+        umn.insert(1,cteframe(da.get()),text='    %s    '%da.get())
+        mtext=ust[da.get()]
+        mtext.config(state='normal')
+        mtext.insert(1.0,s)
+        mtext.config(state='disabled')
         msg.delete(0,'end')
-        csd()
+        umn.select(uf[da.get()])
     except Exception as e:
         showerror('ERROR',e)
 def setpath():
@@ -194,21 +211,25 @@ def sharedown():
     sw.mainloop()
 @lc.receive
 def receive(obj):
-    sth=Thread(daemon=True,target=info)
-    sth.start()
     plen=len(pa.get())
-    s=('[%s->%s]%s\n'%
-        (obj[0][plen+1:],lc.getip()[plen+1:],obj[1])).replace('..','.')
-    if obj[0][plen+1:] not in ul:
-        um[obj[0][plen+1:]]=[s,]
-        ul.add(obj[0][plen+1:])
-        da['value']=tuple(ul)
-    else:
-        um[obj[0][plen+1:]].append(s)
-    if da.get()==obj[0][plen+1:]:
-        csd()
+    sth=Thread(daemon=True,target=info,args=(
+        ctypes.c_char_p(('新消息(来自 %s)'%obj[0][plen+1:]).encode('ANSI')),))
+    sth.start()
+    s=('[%s]%s\n'%
+        (obj[0][plen+1:],obj[1])).replace('..','.')
+    umn.insert(1,cteframe(obj[0][plen+1:]),text='    %s    '%obj[0][plen+1:])
+    mtext=ust[obj[0][plen+1:]]
+    mtext.config(state='normal')
+    mtext.insert(1.0,s,'blue')
+    mtext.config(state='disabled')
+    index=umn.index('current')
+    st=umn.tab(index)
+    st=st['text'][4:-4]
+    if st!=obj[0][plen+1:]:
+        c=umn.tab(uf[obj[0][plen+1:]],'text')
+        umn.tab(uf[obj[0][plen+1:]],text=c.replace('    ','  ! ',1))
 b=Button(fsend,text='发送',command=click)
-sharef=Frame(w)
+sharef=Frame(fw)
 def osws():
     oswth=Thread(daemon=True,target=opensharewin)
     oswth.start()
@@ -220,20 +241,20 @@ bd=Button(sharef,text='文件下载',command=sds)
 def sdf():
     sdfth=Thread(daemon=True,target=setpath)
     sdfth.start()
-bf=Button(w,text='设置下载路径',command=sdf)
-def csd(*a):
-    un=da.get()
-    plen=len(pa.get())
-    mtext.config(state='normal')
-    mtext.delete(1.0,'end')
-    for i in um[un]:
-        if i[1:i.find('->')]!=lc.getip()[plen+1:]:
-            mtext.insert(1.0,i,'blue')
-        else:
-            mtext.insert(1.0,i)
-    mtext.config(state='disabled')
-w.bind("<Return>",click)
-w.bind("<<ComboboxSelected>>",csd)
+bf=Button(fw,text='设置下载路径',command=sdf)
+def ntd(*a):
+    index=umn.index('current')
+    st=umn.tab(index)
+    st=st['text'][4:-4]
+    if st=='关于':return
+    c=umn.tab(uf[st],'text')
+    umn.tab(uf[st],text=c.replace('!',' ',1))
+    da.delete(0,'end')
+    da.insert(0,st)
+mw.bind("<Return>",click)
+mw.bind("<<NotebookTabChanged>> ",ntd)
+Label(w).pack()#empty labels
+Label(fw).pack()
 lpa.pack(side='left')
 pa.pack(side='right')
 fpa.pack()
@@ -250,19 +271,25 @@ bf.pack()
 bs.pack(side='left')
 bd.pack(side='right')
 sharef.pack()
-mtext.pack()
-share.pack()
-mtext.config(state='normal')
-mtext.insert(1.0,'''\
+aboutmt.pack(fill=BOTH,expand=True)
+share.pack(fill=BOTH,expand=True)
+mn.add(w,text='    消息    ')
+mn.add(fw,text='    文件    ')
+umn.add(aboutf,text='    关于    ')
+umn.add(t:=Frame())
+umn.hide(t)
+mn.pack(fill=BOTH,expand=True)
+umn.pack(fill=BOTH,expand=True)
+aboutmt.insert(1.0,'''\
 继续使用本程序即表明您已阅读并接受GNU通用公共许可协议
-SWDChat第%s版，
+SWDChat %s，
 版权所有（C）2020-2023 SWD Coding Group
     本程序在适用法律范围内不提供品质担保。除非另作书面声明，版权持有人及其他程序提供者“概”不提供任何显式或隐式的品质担保，品质担保所指包括而不仅限于有经济价值和适合特定用途的保证。全部风险，如程序的质量和性能问题，皆由你承担。若程序出现缺陷，你将承担所有必要的修复和更正服务的费用。
     除非适用法律或书面协议要求，任何版权持有人或本程序按本协议可能存在的第三方修改和再发布者，都不对你的损失负有责任，包括由于使用或者不能使用本程序造成的任何一般的、特殊的、偶发的或重大的损失（包括而不仅限于数据丢失、数据失真、你或第三方的后续损失、其他程序无法与本程序协同运作），即使那些人声称会对此负责。
 See the GNU General Public License for more details.
 '''%version)
-mtext.insert('end','\n本机IP:%s'%lc.getip(),'red')
-mtext.config(state='disabled')
+aboutmt.insert('end','\n本机IP:%s'%lc.getip(),'red')
+aboutmt.config(state='disabled')
 share.config(state='normal')
 share.insert(1.0,'''\
 文件分享列表:
