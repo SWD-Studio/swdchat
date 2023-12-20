@@ -1,13 +1,14 @@
 /* Replace "dll.h" with the name of your header */
 #include "dll.h"
 #include <windows.h>
+#include<stdio.h>
 
-DLLIMPORT void info() {
+DLLIMPORT void info(const char *s) {
 	NOTIFYICONDATA nid = {sizeof(nid)};
 	nid.uFlags = NIF_INFO;
 	nid.dwInfoFlags = NIIF_INFO;
 	strcpy_s(nid.szInfoTitle, sizeof(nid.szInfoTitle), "SWDChat");
-	strcpy_s(nid.szInfo, sizeof(nid.szInfo), "ÐÂÏûÏ¢");
+	strcpy_s(nid.szInfo, sizeof(nid.szInfo), s);
 	Shell_NotifyIcon(NIM_ADD, &nid);
 	Sleep(2 * 1000);
 	Shell_NotifyIcon(NIM_DELETE, &nid);
