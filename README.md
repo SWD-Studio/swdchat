@@ -1,7 +1,7 @@
 # SWDChat
 ## 一个免费，自由，开源的局域网去中心化信息传输交流工具
 
-SWDChat v1.1.0rc1是由SWD Studio以GNU GPLv3协议于20231215发布的软件
+SWDChat v1.1.0rc2是由SWD Studio以GNU GPLv3协议于CST 2023年12月20日发布的软件
 
 #### 运行时请启动swdchat.py文件.
 
@@ -33,20 +33,32 @@ raise an issue or send an email to <swd_studio@outlook.com>
 程序版本号为1.1.0rc1
 
 ### 更新说明：
-#### [1.1.0 rc1](https://github.com/swdstudio/swdchat/releases/tag/v1.1.0rc1 "前往")
+
+#### [v1.1.0 rc2](https://github.com/swdstudio/swdchat/releases/tag/v1.1.0rc2 "前往")
+
+修改用户界面
+
+使用选项卡选择不同的用户
+
+新消息提醒显示发送者
+
+收到或发送消息后在左侧选项卡把该用户移动到最上面
+
+有未查看的消息时显示一个感叹号
+
+#### [v1.1.0 rc1](https://github.com/swdstudio/swdchat/releases/tag/v1.1.0rc1 "前往")
 
 在文件分享及下载窗口将回车与提交按钮绑定
 
 提供下拉列表框选择不同的用户
 
-#### [1.0.2](https://github.com/swdstudio/swdchat/releases/tag/1.0.2 "前往")
+#### [v1.0.2](https://github.com/swdstudio/swdchat/releases/tag/1.0.2 "前往")
 
 在获取的IP为127.0.0.1时提示检查网络连接
 
 允许自定义下载路径
 
 调整消息输入框大小
-
 
 ### 开发环境：
 系统：Windows 7
