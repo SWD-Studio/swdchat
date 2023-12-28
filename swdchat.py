@@ -25,14 +25,16 @@ import ctypes
 from threading import Thread
 from multiprocessing import Process
 from os import system
-from time import sleep
+import os
+from time import sleep,localtime, strftime
 from urllib.parse import quote
 from urllib.error import HTTPError,URLError
 from collections import deque
 uf={}#user frame
 ust={}#user ST
 port=36144
-version='1.1.0rc2'
+imgs=deque()#imgs
+version='1.1.0rc3'
 if lc.getip()=='127.0.0.1':
     print('程序无法启动,请检查网络连接.')
     system('pause>nul')
@@ -43,7 +45,7 @@ mw=Tk()#main window
 mw.title('SWDChat %s'%version)
 mw.update()
 mw.geometry('400x650')
-mw.resizable(0,0)
+#mw.resizable(0,0)
 style1=Style()
 style1.configure('my1.TNotebook', tabposition='n')
 mn=Notebook(mw,style='my1.TNotebook')#main notebook
@@ -59,6 +61,7 @@ msgf=Frame(w)
 fpa=Frame(w)
 fda=Frame(w)
 fsend=Frame(w)
+isend=Frame(w)#image
 pa=Entry(fpa)
 da=Entry(fda)
 msg=Entry(fsend)
@@ -74,6 +77,9 @@ if whnd != 0:
     ctypes.windll.kernel32.CloseHandle(whnd)
 showinfo=ctypes.WinDLL('./showinfo.dll')
 info=showinfo.info
+def gettime():
+    t=strftime("%X", localtime())
+    return t[:t.rfind(':')]
 def cteframe(da):
     try:
         return uf[str(da)]
@@ -141,9 +147,10 @@ def click(*a):
             return
         sendmsg(s,da.get())
         plen=len(pa.get())
-        s=('[%s]%s\n'
-            %(lc.getip()[plen+1:],s)).replace('..','.')
-        umn.insert(1,cteframe(da.get()),text='    %s    '%da.get())
+        s=('[%s] %s\n%s\n'
+            %(lc.getip()[plen+1:],gettime(),s)).replace('..','.')
+        umn.insert(1,cteframe(da.get()),
+                   text='{:>14}'.format(da.get()))
         mtext=ust[da.get()]
         mtext.config(state='normal')
         mtext.insert(1.0,s)
@@ -158,6 +165,25 @@ def setpath():
     edp.delete(0,'end')
     edp.insert(0,lc.downpath())
     edp.config(state='disabled')
+def sendimg():
+    if pa.get()=='' or da.get()=='' or sic.get()=='':
+        return
+    umn.insert(1,cteframe(da.get()),
+                   text='{:>14}'.format(da.get()))
+    umn.select(uf[da.get()])
+    plen=len(pa.get())
+    mtext=ust[da.get()]
+    path='./img/%s'%sic.get()
+    p=PhotoImage(file=path)
+    mtext.config(state='normal')
+    mtext.insert('1.0','\n')
+    mtext.image_create(1.0,image=p)
+    imgs.append(p)
+    s=('[%s] %s\n'%
+            (lc.getip()[plen+1:],gettime())).replace('..','.')
+    mtext.insert('1.0',s)
+    mtext.config(state='disabled')
+    lc.send((lc.getip(),1,sic.get()),(pa.get()+'.'+da.get()).replace('..','.'),str(port))
 def sendmsg(s,no):
     if pa.get()=='' or no=='':
         raise SyntaxError
@@ -211,24 +237,39 @@ def sharedown():
     sw.mainloop()
 @lc.receive
 def receive(obj):
+    time=gettime()
     plen=len(pa.get())
+    umn.insert(1,cteframe(obj[0][plen+1:]),
+               text='{:>14}'.format(obj[0][plen+1:]))
+    print(len('{:>14}'.format(obj[0][plen+1:])))
+    mtext=ust[obj[0][plen+1:]]
     sth=Thread(daemon=True,target=info,args=(
         ctypes.c_char_p(('新消息(来自 %s)'%obj[0][plen+1:]).encode('ANSI')),))
     sth.start()
-    s=('[%s]%s\n'%
-        (obj[0][plen+1:],obj[1])).replace('..','.')
-    umn.insert(1,cteframe(obj[0][plen+1:]),text='    %s    '%obj[0][plen+1:])
-    mtext=ust[obj[0][plen+1:]]
     mtext.config(state='normal')
-    mtext.insert(1.0,s,'blue')
+    if obj[1]==1:#用1表示图片
+        path='./img/%s'%obj[2]
+        p=PhotoImage(file=path)
+        mtext.insert('1.0','\n')
+        mtext.image_create(1.0,image=p)
+        imgs.append(p)
+        s=('[%s] %s\n'%
+            (obj[0][plen+1:],time)).replace('..','.')
+    else:
+        s=('[%s] %s\n%s\n'%
+            (obj[0][plen+1:],time,obj[1])).replace('..','.')
+    mtext.insert('1.0',s,'blue')
     mtext.config(state='disabled')
     index=umn.index('current')
     st=umn.tab(index)
-    st=st['text'][4:-4]
-    if st!=obj[0][plen+1:]:
+    st=st['text'].split()[-1]
+    if st!=obj[0][plen+1:] and obj[0][plen+1:]!=lc.getip()[plen+1:]:
         c=umn.tab(uf[obj[0][plen+1:]],'text')
         umn.tab(uf[obj[0][plen+1:]],text=c.replace('    ','  ! ',1))
 b=Button(fsend,text='发送',command=click)
+sic=Combobox(isend)
+sic['values']=[str(i).split('\'')[1] for i in os.scandir(path='./img')]
+sib=Button(isend,text='发送图片',command=sendimg)
 sharef=Frame(fw)
 def osws():
     oswth=Thread(daemon=True,target=opensharewin)
@@ -245,7 +286,7 @@ bf=Button(fw,text='设置下载路径',command=sdf)
 def ntd(*a):
     index=umn.index('current')
     st=umn.tab(index)
-    st=st['text'][4:-4]
+    st=st['text'].split()[-1]
     if st=='关于':return
     c=umn.tab(uf[st],'text')
     umn.tab(uf[st],text=c.replace('!',' ',1))
@@ -264,6 +305,9 @@ fda.pack()
 msg.pack(side='left',ipadx=70)
 b.pack(side='right')
 fsend.pack()
+sic.pack(side='left')
+sib.pack(side='right')
+isend.pack()
 ldp.pack(side='left')
 edp.pack(side='right',ipadx=85)
 fdp.pack()
@@ -275,7 +319,7 @@ aboutmt.pack(fill=BOTH,expand=True)
 share.pack(fill=BOTH,expand=True)
 mn.add(w,text='    消息    ')
 mn.add(fw,text='    文件    ')
-umn.add(aboutf,text='    关于    ')
+umn.add(aboutf,text='{:>12}'.format('关于'))
 umn.add(t:=Frame())
 umn.hide(t)
 mn.pack(fill=BOTH,expand=True)
