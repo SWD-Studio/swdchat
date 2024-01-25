@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2023  SWD Code Group
+#    Copyright (C) 2020-2024  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -13,8 +13,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.yespan.com.
-#20231213
-#bugs fix
+#20240122
+#缩短端口占用检测时间
 import socket
 from json import dumps,loads
 import os
@@ -129,7 +129,7 @@ def filedown(url:str,file:str=None,report=None):
         percent=int(100*blocknum*blocksize/totalsize)
         if percent>100:
             percent=100
-        report(percent)  
+        report(percent)
     if file==None:
         t=urlopen(url.replace('/s/','/getname/'))
         file=unquote(str(t.headers).split('\n')[2][:-2])
@@ -139,6 +139,8 @@ def filedown(url:str,file:str=None,report=None):
     except Exception:
         ...
     f,h=urlretrieve(url,file,reporthook=reporthook if report!=None else None)
+    file=open(file)
+    file.close()
 def share(code:str,filepath:str):
     fmap[code]=filepath
 def rmshare(code):
@@ -151,9 +153,13 @@ def init(port:int=36144,daemon:bool=True):
     global httpd
     global sport
     sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    sock.settimeout(1)
-    if not sock.connect_ex((getip(),port)):
+    try:
+        sock.bind((getip(),port))
+    except OSError:
         return 1
+    finally:
+        sock.close()
+    sock.close()
     port=int(port)
     sport=port
     httpd=ThreadingHTTPServer((getip(),port),SHRH)

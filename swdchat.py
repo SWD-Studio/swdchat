@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2023  SWD Code Group
+#    Copyright (C) 2020-2024  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #    You can contact us on swd-go.yespan.com.
 print('请稍后...')
 import swdlc as lc
+import httpsserver as hs
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText as ST
 from tkinter.ttk import *
@@ -33,19 +34,24 @@ from collections import deque
 uf={}#user frame
 ust={}#user ST
 port=36144
+iport=port-1
 imgs=deque()#imgs
-version='1.1.0rc3'
+version='1.1.0rc5'
 if lc.getip()=='127.0.0.1':
     print('程序无法启动,请检查网络连接.')
     system('pause>nul')
 if lc.init(port):
     print('端口被占用,程序无法启动.')
     system('pause>nul')
+system('mkdir img>nul')
+iserver=Thread(target=hs.serve,args=('./img/',iport,),daemon=True)
+iserver.start()
 mw=Tk()#main window
 mw.title('SWDChat %s'%version)
+mw.iconbitmap('logo.ico')
 mw.update()
 mw.geometry('400x650')
-#mw.resizable(0,0)
+mw.resizable(0,0)
 style1=Style()
 style1.configure('my1.TNotebook', tabposition='n')
 mn=Notebook(mw,style='my1.TNotebook')#main notebook
@@ -174,7 +180,12 @@ def sendimg():
     plen=len(pa.get())
     mtext=ust[da.get()]
     path='./img/%s'%sic.get()
-    p=PhotoImage(file=path)
+    try:
+        p=PhotoImage(file=path)
+    except Exception:
+        messagebox.showerr('找不到文件，源文件可能已被删除','SWDChat')
+        sic['values']=[str(i).split('\'')[1] for i in os.scandir(path='./img')]
+        return
     mtext.config(state='normal')
     mtext.insert('1.0','\n')
     mtext.image_create(1.0,image=p)
@@ -249,7 +260,12 @@ def receive(obj):
     mtext.config(state='normal')
     if obj[1]==1:#用1表示图片
         path='./img/%s'%obj[2]
-        p=PhotoImage(file=path)
+        try:
+            p=PhotoImage(file=path)
+        except Exception:
+            lc.filedown('https://%s:%d/%s'%(obj[0],iport,quote(obj[2])),path)
+            sic['values']=[str(i).split('\'')[1] for i in os.scandir(path='./img')]
+            p=PhotoImage(file=path)
         mtext.insert('1.0','\n')
         mtext.image_create(1.0,image=p)
         imgs.append(p)
@@ -270,13 +286,16 @@ b=Button(fsend,text='发送',command=click)
 sic=Combobox(isend)
 sic['values']=[str(i).split('\'')[1] for i in os.scandir(path='./img')]
 sib=Button(isend,text='发送图片',command=sendimg)
+def refunc():
+    sic['values']=[str(i).split('\'')[1] for i in os.scandir(path='./img')]
+ref=Button(isend,text='刷新列表',command=refunc)
 sharef=Frame(fw)
 def osws():
     oswth=Thread(daemon=True,target=opensharewin)
     oswth.start()
 bs=Button(sharef,text='文件分享',command=osws)
 def sds():
-    sdth=Process(daemon=True,target=sharedown)
+    sdth=Thread(daemon=True,target=sharedown)
     sdth.run()
 bd=Button(sharef,text='文件下载',command=sds)
 def sdf():
@@ -307,6 +326,7 @@ b.pack(side='right')
 fsend.pack()
 sic.pack(side='left')
 sib.pack(side='right')
+ref.pack()
 isend.pack()
 ldp.pack(side='left')
 edp.pack(side='right',ipadx=85)
@@ -327,7 +347,7 @@ umn.pack(fill=BOTH,expand=True)
 aboutmt.insert(1.0,'''\
 继续使用本程序即表明您已阅读并接受GNU通用公共许可协议
 SWDChat %s，
-版权所有（C）2020-2023 SWD Coding Group
+版权所有（C）2020-2024 SWD Studio
     本程序在适用法律范围内不提供品质担保。除非另作书面声明，版权持有人及其他程序提供者“概”不提供任何显式或隐式的品质担保，品质担保所指包括而不仅限于有经济价值和适合特定用途的保证。全部风险，如程序的质量和性能问题，皆由你承担。若程序出现缺陷，你将承担所有必要的修复和更正服务的费用。
     除非适用法律或书面协议要求，任何版权持有人或本程序按本协议可能存在的第三方修改和再发布者，都不对你的损失负有责任，包括由于使用或者不能使用本程序造成的任何一般的、特殊的、偶发的或重大的损失（包括而不仅限于数据丢失、数据失真、你或第三方的后续损失、其他程序无法与本程序协同运作），即使那些人声称会对此负责。
 See the GNU General Public License for more details.
