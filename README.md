@@ -1,20 +1,12 @@
 # SWD Chat
 ## 一个免费，自由，开源的局域网去中心化信息传输交流工具
 
-SWDChat v1.1.0rc5是由SWD Studio以GNU GPLv3协议于CST 2023年12月27日发布的软件
+![SWDChat-ico](https://github.com/SWD-Studio/swdchat/assets/164627892/a479cb8d-6356-4126-96e8-ce1cad670818)
+
+SWDChat v2.0.0a2是由SWD Studio以GNU GPLv3协议于CST 2023年12月27日发布的软件
 
 #### 运行时请启动swdchat.py文件.
 
-### 使用方法
-在默认用户后加目标IP的最后一位，直接在消息栏中输入消息，回车/按“发送”即可发送
-
-### 共享文件：
-
-点击文件分享，输入分享代码（自定义，用于标识同一用户的不同文件）并选择文件即可上传
-
-### 下载文件：
-
-输入文件来源的IP后缀和文件分享代码即可下载
 
 ### 关于如何创建表情包：
 
@@ -29,6 +21,14 @@ SWDChat v1.1.0rc5是由SWD Studio以GNU GPLv3协议于CST 2023年12月27日发�
 raise an issue or send an email to <swd_studio@outlook.com>
 
 ### 更新说明：
+
+####  [v2.0.0 a2](https://github.com/swdstudio/swdchat/releases/tag/v2.0.0a2 "前往")
+1. 代码重构
+  
+2. ui界面升级
+
+3. 群组等功能更新
+
 ####  [v1.1.0 rc5](https://github.com/swdstudio/swdchat/releases/tag/v1.1.0rc5 "前往")
 1. 修改图标
   
