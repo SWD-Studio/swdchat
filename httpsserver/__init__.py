@@ -12,7 +12,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#    You can contact us on swd-go.yespan.com.
+#    You can contact us on swd-go.ys168.com.
 from http.server import HTTPServer as HS,SimpleHTTPRequestHandler as SHRH
 from http.server import BaseHTTPRequestHandler as BHRH
 import ssl
@@ -21,6 +21,7 @@ myip=socket.gethostbyname(socket.gethostname())
 def getip():
     return myip
 def serve(directory,port):
+    global myport
     class Ft(SHRH):
         def __init__(self, *args, **kwargs):
             self.directory = directory
@@ -30,5 +31,6 @@ def serve(directory,port):
     context.load_cert_chain(certfile='cert.pem', keyfile='key.pem')
     h.socket=context.wrap_socket(h.socket,server_side=True)
     h.serve_forever()
+    myport=h.server_port
 if __name__=='__main__':
     serve('.',44300)
