@@ -13,10 +13,11 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.ys168.com.
-#20240306
-#是否启用TLS成为可选项
-#默认端口改为随机
-#注释
+#20240406
+#注释微调
+#下载次数支持设置为有限或无限次
+#修改文件名获取方式(同时兼容旧方法)
+#bugs fix
 import socket
 from json import dumps,loads
 import os
@@ -87,6 +88,7 @@ class SHRH(BaseHTTPRequestHandler):
                 return
             self.send_response(200)
             self.send_header(quote(fmap[ucode].split('/')[-1]), '')
+            self.send_header('Filename', quote(fmap[ucode].split('/')[-1]))
             self.end_headers()
         elif self.path=='/favicon.ico' or self.path=='' or self.path[0:3]!='/s/':
             #忽略请求图标等
@@ -152,7 +154,7 @@ def receive(func):
     receive_func=func
     return func
 def downpath(path:str=None):
-    """为filedown设定文件下载路径
+    """为filedown设定文件下载路径,不传入参数返回当前默认路径
 """
     global defpath
     if path is None:
@@ -165,6 +167,8 @@ def filedown(url:str,file:str=None,report=None):
 filedown(url:str,report=None)
 用于swdlc的文件分享
 url='https://<IP>:<port>/s/<sharecode>'
+若enable_TLS为False，https改为http
+url也可直接用浏览器访问
 report为回调函数
 """
     def reporthook(blocknum,blocksize,totalsize):
@@ -174,7 +178,9 @@ report为回调函数
         report(percent)
     if file==None:
         t=urlopen(url.replace('/s/','/getname/'))
-        file=unquote(str(t.headers).split('\n')[2][:-2])
+        print(t.headers)
+        h=unquote(str(t.headers)).split('\n')
+        file=[i.split()[-1] for i in h if i.startswith('Filename:')][0]
     try:
         file=(defpath+'/'+file).replace('//','/')
     except Exception:
