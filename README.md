@@ -3,7 +3,7 @@
 
 ![SWDChat-ico](https://github.com/SWD-Studio/swdchat/assets/164627892/a479cb8d-6356-4126-96e8-ce1cad670818)
 
-SWDChat v2.0.0a2是由SWD Studio以GNU GPLv3协议于CST 2023年12月27日发布的软件
+SWDChat v2.0.0a3是由SWD Studio以GNU GPLv3协议于CST 2024年4月6日发布的软件
 
 #### 运行时请启动swdchat.py文件.
 
