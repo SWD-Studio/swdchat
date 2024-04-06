@@ -13,6 +13,9 @@ raise an issue or send an email to <swd_studio@outlook.com>
 
 ### 更新说明：
 
+####  [v2.0.0 a3](https://github.com/swdstudio/swdchat/releases/tag/v2.0.0a3 "前往")
+bugs fixed
+
 ####  [v2.0.0 a2](https://github.com/swdstudio/swdchat/releases/tag/v2.0.0a2 "前往")
 1. 代码重构
   
