@@ -130,6 +130,14 @@ class CreateFrame(object):
 
     def getall(self):
         'get all user imformation'
+        newn=self._name_e.get()
+        if not newn:#空白
+            messagebox.showerror('SWDChat','名称中不能留空')
+            self._name_e.focus_set()
+            return
+        if ' ' in newn:#有空格
+            messagebox.showerror('SWDChat','名称中不能有空格')
+            return
         userset=set()
         for i in self.userlist:
             userset.add(i.fetch())
@@ -172,3 +180,8 @@ def _demo():
 
 if __name__=='__main__':
     _demo()
+
+'''
+写在最后的话:
+键盘控制的部分来不及写了，要不你写或者等我回来写吧
+'''
