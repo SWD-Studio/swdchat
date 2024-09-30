@@ -108,8 +108,8 @@ path_f.pack()
 
 def setpath():#设定下载路径线程
     path_e.config(state='normal')
-    path_e.insert(0,filedialog.askdirectory())
     path_e.delete(0,'end')
+    path_e.insert(0,filedialog.askdirectory())
     path_e.config(state='disabled')
 def sdf():#设定下载路径
     sdfth=Thread(daemon=True,target=setpath)
