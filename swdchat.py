@@ -30,7 +30,8 @@ from tkinter.messagebox import showerror,showinfo
 import swdlc as lc
 from swdlc import getip
 import schat
-import create
+import ui_groupset
+import ui_aboutf
 #以chatid为键
 un={}#chatid:用户名
 uf={}#chatid:Frame
@@ -39,7 +40,7 @@ uso={}#chatid:Schat对象
 #以str(frame)为键
 f2id={}#str(frame):chatid
 
-port=36144#首选端口
+port=14364#首选端口
 imgs=deque()#存放PhotoImage对象
 version='2.0.0a3'#版本号
 if lc.getip()=='127.0.0.1':#若未连接互联网，地址应为127.0.0.1
@@ -48,6 +49,10 @@ if lc.getip()=='127.0.0.1':#若未连接互联网，地址应为127.0.0.1
 if schat.init(port):#36144已被占用
     schat.init(0)#使用随机端口
 port=schat.myport#本机使用的端口(int)
+
+ui_groupset.ipconfig(ip=lc.getip(),port=port)
+ui_aboutf.config(vers=version)
+
 system('mkdir img>>nul')#创建img文件夹
 mw=Tk()#SWDChat主窗口
 mw.title('SWDChat %s'%version)#设定标题
@@ -67,25 +72,9 @@ username_l=Label(msg_f,text='用户名：%s'%schat.username)#用户名标签
 username_l.pack(fill=X)
 
 
-#about_f 关于（首页）
-about_f=Frame(msg_f)
-about_s=ST(about_f)
-about_s.pack(fill=BOTH,expand=True)
-about_s.tag_config('about',font=('Consolas',14))#设置字体
-about_s.insert(1.0,'''\
-Welcome to SWDChat {v}
+about_f=ui_aboutf.AboutFrame()
+user_n.add(about_f.frame,text='{:>12}'.format('关于'))#添加到选项卡
 
-SWDChat {v} Copyright（C）2020-2024 SWD Studio
-
-This program comes with ABSOLUTELY NO WARRANTY.
-This is free software, and you are welcome redistribute it under certain conditions.
-See the GNU General Public License for more details.
-
-You can contact us on swd-go.ys168.com.
-'''.format(v=version),'about')
-about_s.config(state='disabled')
-user_n.add(about_f,text='{:>12}'.format('关于'))#添加到选项卡
-#about_f end
 
 #set_f 设置
 set_f=Frame(msg_f)
@@ -126,8 +115,7 @@ user_n.add(set_f,text='{:>12}'.format('设置'))#添加到选项卡
 #set_f end
 
 #new_f
-create.ipconfig(ip=lc.getip(),port=port)
-new_f=create.CreateFrame(master=msg_f)
+new_f=ui_groupset.GroupSetFrame(master=msg_f)
 @new_f.fetch
 def new(newn,userset):#创建新群组
     #newn=newname_e.get()#获得群组名称
@@ -296,7 +284,7 @@ def enter(*a):#处理回车键事件(调用'发送'按钮)
     uso[f2id[fstr]].click()
 mw.bind("<Return>",enter)
 mw.bind("<<NotebookTabChanged>> ",ntd)
-user_n.add(about_f,text='{:>12}'.format('关于'))
+user_n.add(about_f.frame,text='{:>12}'.format('关于'))
 user_n.pack(fill=BOTH,expand=True)
 msg_f.pack(fill=BOTH,expand=True)
 myip=lc.getip()
