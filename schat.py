@@ -12,63 +12,71 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#    You can contact us on swd-go.ys168.com.
-#20240315
+#    You can contact us on swd-go.ysepan.com.
+
+#20241103
+#SWDChat专用版
+#chatid改为str
 import swdlc as lc
 from swdlc import getip
-from sys import exit,stderr
 from threading import Thread
 from tkinter import *
 from tkinter.filedialog  import *
 from tkinter.scrolledtext import ScrolledText as ST
 from tkinter.ttk import *
-from tkinter.messagebox import showerror,showinfo
-from time import sleep,localtime, strftime,time
-from os.path import relpath
-import filecmp
-import os
-class SchatBaseException(Exception):pass
-class StopSending(SchatBaseException):pass
-class ChatWindowError(SchatBaseException):pass
-#{'username':用户名,'type':内容类型,'msg':内容,'addr':地址,'name':群组名,'chatid':群组id}
-win_obj={}#已创建的对象
-username=getip()
-def gettime():
+from tkinter.messagebox import showerror
+from time import localtime, strftime,time
+
+#消息传递格式(不同类型的消息可能略有不同)
+#{'username':用户名,'type':内容类型,'msg':内容,
+#'addr':地址,'name':群组名,'chatid':群组id,
+#'from':(IP,port),'addrver':用户列表版本，即更新时间}
+
+username=getip()#默认用户名
+def gettime():#获取系统时间
     t=strftime("%X", localtime())
     return t[:t.rfind(':')]
-class Schat(object):
+class SchatFrame(object):
     enable_TLS=True
     message_color=('black','blue')
     enable_tips=True
     name=''#name of this Schat
-    def __init__(self,address:tuple,**options):
-        self._address=tuple(sorted(address))
+    def __init__(self,root:Tk,address:tuple,**options):
+        self.cw=Frame(root)
+        self.address=sorted(address)
+        self.addrver=str(time())
         for i in options:
             exec('self.%s=%s'%(i,repr(options[i])))
-        self._id=len(win_obj)
-        self.chatid=time()
-        win_obj[self.chatid]=self
+        self.chatid=str(time())#缺省chatid
     def _send(self,**kwargs):
-        for ip,port in self._address:
+        kwargs['username']=username
+        kwargs['addr']=self.address
+        kwargs['name']=self.name
+        kwargs['chatid']=self.chatid
+        kwargs['from']='{}:{}'.format(getip(),myport)
+        kwargs['addrver']=self.addrver
+        for ip,port in self.address:
             Thread(target=lc.send,
                    args=((kwargs,ip,str(port)))).start()
+    def sendnew(self, addr=None):
+        if addr:
+            self.addr=addr
+        self._send(type='new',
+                   )
     def _sendimg(self):
         try:
             if (fp:=askopenfilename())=='':
                 return
             open(fp).close()
             imgid=str(time())
-            lc.share(imgid,fp,len(self._address))
+            lc.share(imgid,fp,len(self.address))
         except Exception as e:
             showerror('SWDChat','找不到文件'+str(e))
             return
-        self._send(username=username,
-                   type='img',
+        self._send(type='img',
                    imgname=fp.split('/')[-1],
                    url='https://%s:%d/s/%s'%(getip(),myport,imgid),
-                   addr=self._address,
-                   name=self.name,
-                   chatid=self.chatid,)
+                   )
     def _sendfile(self):
         try:
             if (fp:=askopenfilename())=='':
@@ -79,31 +87,24 @@ class Schat(object):
         except Exception:
             showerror('SWDChat','找不到文件')
             return
-        self._send(username=username,
-                   type='file',
+        self._send(type='file',
                    filename=fp.split('/')[-1],
                    url='https://%s:%d/s/%s'%(getip(),myport,fileid),
-                   addr=self._address,
-                   name=self.name,
-                   chatid=self.chatid,)
+                   )
     def _sendmsg(self):
         s=self.msg.get()
+        if s[0]==' ':
+            self.address.append((s.split()[0],int(s.split()[1])))
+            self.addrver=str(time())
+            self.sendnew()
+            return
         if not s:
             return
         self.msg.delete(0,'end')
-        try:
-            s=self.sendcheck(s)
-        except StopSending:
-            pass
-        self._send(username=username,
-                   type='msg',
+        self._send(type='msg',
                    msg=s,
-                   addr=self._address,
-                   name=self.name,
-                   chatid=self.chatid,)
-    def sendcheck(self,usermsg):
-        return usermsg
-    def receivecheck(self,received):
+                   )
+    def modify(self):
         pass
     def mainloop(self):
         def _click(*a):
@@ -121,6 +122,11 @@ class Schat(object):
                 self._sendfile()
             except Exception as e:
                 showerror('ERROR',e)
+        def _click_modify(*a):
+            try:
+                self.modify(self)
+            except Exception as e:
+                showerror('ERROR',e)
         self.click=_click
         self.fsend=Frame(self.cw)
         self.btns_f=Frame(self.fsend)
@@ -130,104 +136,19 @@ class Schat(object):
         self.mtext.tag_config('red',foreground='red')
         self.b=Button(self.btns_f,text='发送',command=_click)
         self.img_b=Button(self.btns_f,text='发送图片',command=_click_img)
-        self.img_f=Button(self.btns_f,text='发送文件',command=_click_file)
+        self.file_b=Button(self.btns_f,text='发送文件',command=_click_file)
+        self.modify_b=Button(self.btns_f,text='修改群组',command=_click_modify)
         self.cw.bind("<Return>",_click)
         self.msg.pack(side='left',fill=X,expand=True)
         self.b.pack(side='right')
         self.img_b.pack(side='left')
-        self.img_f.pack(side='left')
+        self.file_b.pack(side='left')
+        self.modify_b.pack(side='left')
         self.btns_f.pack(side='right')
         self.fsend.pack(fill=X,expand=False)
         self.mtext.pack(fill=BOTH,expand=True)
-    def receive(self,s,usern):
-        self.receivecheck(s)
-        self.mtext.config(state='normal')
-        if usern==username:
-            try:
-                self.mtext.tag_config(self.message_color[0],
-                                      foreground=self.message_color[0])
-                self.mtext.insert(1.0,s,self.message_color[0])
-            except Exception as e:
-                print('This exception is from schat window while receiving an message',
-                      type(e),e,'\n',sep='\n',file=stderr)
-        else:
-            try:
-                self.mtext.tag_config(self.message_color[1],
-                                      foreground=self.message_color[1])
-                self.mtext.insert(1.0,s,self.message_color[1])
-            except Exception as e:
-                print('This exception is from schat window while receiving an message',
-                       type(e),e,'\n',sep='\n',file=stderr)
-        self.mtext.config(state='disabled')
-class SchatWindow(Schat):
-    '''\
-address:元组，所有人(包括自己)的IP+端口(格式：(IP1,port1),(IP2,port2)...)
-可选参数:
-size:二元组，(x,y)设定窗口尺寸，默认为(400,650)
-message_color:二元组，(color0,color1)，color0指己方消息颜色，color1指对方，
-    默认为('black','blue')
-title:标题
-username:用户名
-'''
-    size=(400,650)
-    title='schat 2024'
-    def __init__(self,address:tuple,**options):
-        self.cw=Tk()
-        super().__init__(address,**options)
-    def setwin(self,mode):
-        '''设置窗口状态:
-    1:显示窗口
-    0:隐藏窗口
-    -1:销毁窗口
-    '''
-        if mode==1:
-            self.cw.deiconify()
-        elif mode==0:
-            self.cw.withdraw()
-        elif mode==-1:
-            self.cw.quit()
-            self.cw.destroy()
-    def mainloop(self):
-        def _click(*a):
-            try:
-                self._sendmsg()
-            except Exception as e:
-                showerror('ERROR',e)
-        self.cw.title(self.title)
-        self.cw.update()
-        self.cw.geometry('{}x{}'.format(self.size[0],self.size[1]))
-        super().mainloop()
-        self.cw.mainloop()
-class SchatFrame(Schat):
-    def __init__(self,root:Tk,address:tuple,**options):
-        self.cw=Frame(root)
-        super().__init__(address,**options)
-    def mainloop(self):
-        def _click(*a):
-            try:
-                self._sendmsg()
-            except Exception as e:
-                showerror('ERROR',e)
-        super().mainloop()
-        #self.cw.pack()
 def init(port:int=0):
     global myport
     if lc.init(port):return 1
     myport=lc.httpd.server_port#本机使用的端口(int)
     return 0
-#@lc.receive
-def receive(obj):
-    try:
-        chatid=obj[4]
-        sobj=win_obj[address]
-        s='[%s]%s'%(obj[0],obj[1])
-        sobj.receive(s,obj[0])
-    except Exception as e:
-        print('This exception is from schat server while receiving an object',
-              type(e),e,'\n',sep='\n',file=stderr)
-if __name__=='__main__':
-    init()
-    tk=Tk()
-    t=SchatFrame(tk,address=((getip(),myport),))
-    t.mainloop()
-    tk.mainloop()

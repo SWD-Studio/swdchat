@@ -15,23 +15,22 @@
 #    You can contact us on swd-go.ys168.com.
 print('请稍后...')
 
-from sys import exit
 import ctypes
 from threading import Thread
 from os import system
 from urllib.error import HTTPError,URLError
 from collections import deque
 from tkinter import *
-import tkinter.filedialog as filedialog
-from tkinter.scrolledtext import ScrolledText as ST
 from tkinter.ttk import *
 from tkinter.messagebox import showerror,showinfo
+from time import time
 
 import swdlc as lc
 from swdlc import getip
 import schat
 import ui_groupset
 import ui_aboutf
+import ui_mainsetf
 #以chatid为键
 un={}#chatid:用户名
 uf={}#chatid:Frame
@@ -50,8 +49,28 @@ if schat.init(port):#36144已被占用
     schat.init(0)#使用随机端口
 port=schat.myport#本机使用的端口(int)
 
+
+class Recdict(object):
+    flag=0
+    def __init__(self,dictobj):
+        self.dict=dictobj
+    def __getitem__(self,key):
+        if key in self.dict:
+            return self.dict[key]
+        else:
+            self.flag=1
+            return ''
+    def __setitem__(self,key,val):
+        self.dict[key]=val
+    def __repr__(self):
+        return repr(self.dict)
+    @property
+    def isErr(self):
+        return self.flag
+
 ui_groupset.ipconfig(ip=lc.getip(),port=port)
 ui_aboutf.config(vers=version)
+ui_mainsetf.ipconfig(ip=lc.getip(),port=port)
 
 system('mkdir img>>nul')#创建img文件夹
 mw=Tk()#SWDChat主窗口
@@ -59,7 +78,7 @@ mw.title('SWDChat %s'%version)#设定标题
 mw.iconbitmap('logo.ico')#设定图标
 mw.update()#刷新窗口
 mw.geometry('1100x700')#设定窗口大小
-mw.resizable(0,0)#窗口大小不可修改
+#mw.resizable(0,0)#窗口大小不可修改
 style1=Style()#设定选项卡方向
 style1.configure('my1.TNotebook', tabposition='n')
 msg_f=Frame(mw,relief='ridge',borderwidth=1)#SWDChat根Frame对象
@@ -73,77 +92,37 @@ username_l.pack(fill=X)
 
 
 about_f=ui_aboutf.AboutFrame()
+about_f.pack()
 user_n.add(about_f.frame,text='{:>12}'.format('关于'))#添加到选项卡
 
 
 #set_f 设置
-set_f=Frame(msg_f)
-myip_l=Label(set_f,text='本机IP:%s\n本机端口:%d'%(getip(),port))#IP及端口信息
-myip_l.pack()
+set_f=ui_mainsetf.MainSetFrame(username=schat.username)
+set_f.pack()
 
-name_f=Frame(set_f)#用户名设定
-name_l=Label(name_f,text='用户名:')
-name_l.pack(side='left')
-name_e=Entry(name_f)
-name_e.pack(side='right',ipadx=85)
-name_f.pack()
+user_n.add(set_f.frame,text='{:>12}'.format('设置'))#添加到选项卡
+@set_f.setting
+def setting(name):#保存设置 
+        schat.username=set_f.username
+        username_l.config(text='用户名：'+schat.username)
 
-path_f=Frame(set_f)#下载路径设定
-path_l=Label(path_f,text='下载路径:')
-path_l.pack(side='left')
-path_e=Entry(path_f,state='disabled')
-path_e.pack(side='right',ipadx=85)
-path_f.pack()
 
-def setpath():#设定下载路径线程
-    path_e.config(state='normal')
-    path_e.delete(0,'end')
-    path_e.insert(0,filedialog.askdirectory())
-    path_e.config(state='disabled')
-def sdf():#设定下载路径
-    sdfth=Thread(daemon=True,target=setpath)
-    sdfth.start()
-path_b=Button(set_f,text='设置下载路径',command=sdf)
-path_b.pack()
-
-def setting():#保存设置
-    schat.username=name_e.get()
-    username_l.config(text='用户名：'+schat.username)
-set_b=Button(set_f,text='保存设置',command=setting)
-set_b.pack()
-user_n.add(set_f,text='{:>12}'.format('设置'))#添加到选项卡
 #set_f end
 
 #new_f
 new_f=ui_groupset.GroupSetFrame(master=msg_f)
 @new_f.fetch
-def new(newn,userset):#创建新群组
+def new(newn,userlist):#创建新群组
     #newn=newname_e.get()#获得群组名称
-
+    t=userlist
+       
     if newn in uso:#已存在
         showerror('SWDChat','该群组已存在')
         return
-    t=[]
-    for k in userset:
-        try:
-            uport=int(k[1])
-        except Exception:#若端口留空则用本机端口
-            uport=port
-        try:#数IP的后缀数
-            l=k[0].count('.')
-        except IndexError:
-            continue
-        temp=getip().split('.')[:3-l]#加上各段IP
-        temp.append(k[0])
-        ip='.'.join(temp)
-        t.append((ip,uport),)#加入用户信息
     frm=cteframe(t)#创建新Frame、Schat对象等
-    uso[f2id[str(frm)]].name=newn#修改群组名
-    for ip,mport in t:#向各用户发送创建新群组
-        Thread(target=lc.send,
-            args=(
-                {'username':schat.username,'type':'new','addr':t,'name':newn,'chatid':f2id[str(frm)]},
-                ip,str(mport))).start()#使用多线程
+    so=uso[f2id[str(frm)]]
+    so.name=newn#修改群组名
+    so.sendnew()#向各用户发送创建新群组
     user_n.insert(2,frm,
                 text='{:>14}'.format(newn))#添加到选项卡
     #newname_e.delete(0, 'end')#清空
@@ -153,6 +132,24 @@ def new(newn,userset):#创建新群组
 user_n.add(new_f.frame,text='{:>12}'.format('创建'))#添加到选项卡
 #new_f end
 
+#modify_f
+modify_id=-1.0#当前正修改的chatid
+modify_f=ui_groupset.GroupSetFrame(master=msg_f,method=ui_groupset.CONFIG)
+user_n.insert(1,modify_f.frame,text='{:>12}'.format('修改'))#添加到选项卡
+user_n.hide(modify_f.frame)
+@modify_f.fetch
+def modify(name,userlist):
+    if modify_id==-1.0:
+        user_n.hide(modify_f.frame)
+        return
+    user_n.hide(modify_f.frame)
+    so=uso[modify_id]
+    so.name=name
+    print(userlist)
+    so.address=userlist
+    so.addrver=str(time())
+    so.sendnew()
+#end modify
 #隐藏命令行窗口
 whnd = ctypes.windll.kernel32.GetConsoleWindow()
 if whnd != 0:
@@ -162,12 +159,33 @@ if whnd != 0:
 showinfodll=ctypes.WinDLL('./showinfo.dll')
 info=showinfodll.info
 
-def cteframe(addr,chatid=None):#创建新Frame、Schat对象等
-    try:#若群组已经创建
-        return uf[chatid]#直接返回
-    except Exception:
-        pass
+def cteframe(addr,addrver=0,chatid=None):#创建新Frame、Schat对象等
+    if chatid in uso:#若群组已经创建
+        if uso[chatid].addrver>=addrver:#用户列表版本最新
+            return uf[chatid]
+        else:#更新用户列表
+            so=uso[chatid]
+            so.addver=addrver
+            so.address=addr
+            return uf[chatid]
     msgs=schat.SchatFrame(mw,address=tuple(map(tuple,addr)))#创建新对象
+    def _modify(self):
+        global modify_id
+        modify_id=self.chatid
+        userlist=self.address[:]
+        for i in range(len(userlist)):
+            userlist[i]={'ip':userlist[i][0],
+                         'port':userlist[i][1],
+                         'username':self.usernames['{}:{}'.format(*userlist[i])],
+                         }
+        print(userlist)
+        modify_f.reset(clear=True)
+        modify_f.initsets(msgs.name, userlist)
+        modify_f.cancel(lambda *a:showinfo('SWDChat','请点击左侧其他任意选项卡以退出'))
+        print(124678)
+        user_n.select(modify_f.frame)
+    msgs.modify=_modify
+    msgs.usernames=Recdict({'{}:{}'.format(*a):'' for a in addr})#用于记录用户名，"IP:port":用户名
     msgs.mainloop()#加载控件
     if chatid!=None:#代表该群组已存在，但本机首次收到消息
         msgs.chatid=chatid#覆盖自动生成的chatid
@@ -206,19 +224,29 @@ def sharedown(filename:str,url:str,path:str):#下载分享文件
     l.pack()
     downth()
     sw.mainloop()
+
 @lc.receive
 def receive(obj):#接收消息
+    obj=Recdict(obj)
     color='black'#默认颜色
     time=schat.gettime()#获取当前时间
-    user_n.insert(2,frm:=cteframe(obj['addr'],obj['chatid']),
+    user_n.insert(2,frm:=cteframe(obj['addr'],obj['addrver'],obj['chatid']),
                text='{:>14}'.format(obj['name']))#把当前群组移到第一个
-    uso[f2id[str(frm)]].name=obj['name']#修改群组名称(若该群组对象已存在则无实际作用)
-    #print(obj,schat.username)
+    from_=obj['from']
+    so=uso[f2id[str(frm)]]#当前SchatFrame对象
+    so.name=obj['name']#修改群组名称(若该群组对象已存在则无实际作用)
+    so.usernames[from_]=obj['username']
+    print(obj.dict,'\n',so.usernames)
     mtext=ust[obj['chatid']]#获取当前群组对应的文本框
-    if obj['username']!=schat.username:#收到其他用户发来的消息
+    if from_!='{}:{}'.format(getip(),port):#收到其他用户发来的消息
+        color='blue'
         sth=Thread(daemon=True,target=info,args=(
             ctypes.c_char_p(('新消息(来自 %s)'%obj['name']).encode('ANSI')),))
         sth.start()
+    s='[%s] %s  From: %s'%(obj['username'],time,from_)
+    if obj.isErr:
+        s+='    (此消息来自旧版SWDChat，部分内容可能未正确显示。)'
+    s+='\n'
     mtext.config(state='normal')
     if obj['type']=='img':#用'img'表示图片
         imgname=obj['imgname']
@@ -231,46 +259,48 @@ def receive(obj):#接收消息
         mtext.insert('1.0','\n')
         mtext.image_create(1.0,image=p)
         imgs.append(p)
-        s=('[%s] %s\n'%
-            (obj['username'],time)).replace('..','.')
-        uso[obj['chatid']].receive(s,obj['username'])
     elif obj['type']=='file':#用'file'表示文件
         filename=obj['filename']
         def _downbf(*a):
-            sharedown(filename,obj['url'],path_e.get()+'/'+filename)
+            sharedown(filename,obj['url'],set_f.default_path+'/'+filename)
         fb=Button(uf[obj['chatid']],text='下载 %s'%filename,command=_downbf)
         mtext.insert(1.0,'\n')
         mtext.window_create('1.0',window=fb)
-        s=('[%s] %s\n'%
-            (obj['username'],time)).replace('..','.')
-        uso[obj['chatid']].receive(s,obj['username'])
     elif obj['type']=='msg':#用'msg'表示文字消息
-        s=('[%s] %s\n%s\n'%
-            (obj['username'],time,obj['msg'])).replace('..','.')
-        uso[obj['chatid']].receive(s,obj['username'])
+        s+=obj['msg']+'\n'
     elif obj['type']=='new':#用'new'表示创建新群组，或成员修改
-        pass
+        userlist=so.address[:]
+        for i in range(len(userlist)):
+            userlist[i]='{}:{}'.format(*userlist[i])
+        color='orange'
+        mtext.insert(1.0,
+                     '当前成员列表：\n[IP:端口号,用户名]\n'+str(['{}\",\"{}'.format(i,so.usernames[i]) for i in userlist])+'\n'
+                     ,color)
     else:
         color='red'
-        s=('[%s] %s\n%s\n'%
-            (obj['username'],time,'当前SWDChat版本过低，无法查看此消息。')).replace('..','.')
-        mtext.insert(1.0,s,color)
+        s+='当前SWDChat版本过低，无法查看此消息。\n'
+    mtext.insert(1.0,s,color)
     mtext.config(state='disabled')
     index=user_n.index('current')
     st=user_n.tab(index)
     st=st['text'].split()[-1]
     if st!=obj['name']:#有新消息的群组不处于选中状态
         c=user_n.tab(uf[obj['chatid']],'text')
-        user_n.tab(uf[obj['chatid']],text=c.replace('    ','  ! ',1))#添加一个'!'提示
+        if '!' not in c:
+            user_n.tab(uf[obj['chatid']],text=c.replace('    ','  ! ',1))#添加一个'!'提示
+config_tabs=('关于','设置','创建','修改')
 def ntd(*a):#处理选项卡单击事件
     index=user_n.index('current')
     st=user_n.tab(index)
     st=st['text'].split()[-1]
+    if st!='修改':
+        user_n.hide(modify_f.frame) 
     fstr=user_n.tabs()[index]
-    if st in ('关于','设置','创建'):
+    if st in config_tabs:
         if st=='设置':
-            name_e.delete(0,'end')
-            name_e.insert(0,schat.username)
+            set_f.reset()
+        elif st=='创建':
+            new_f.reset(clear=True)
         return
     c=user_n.tab(uf[f2id[fstr]],'text')
     user_n.tab(uf[f2id[fstr]],text=c.replace('!',' ',1))
@@ -279,7 +309,7 @@ def enter(*a):#处理回车键事件(调用'发送'按钮)
     st=user_n.tab(index)
     fstr=user_n.tabs()[index]
     st=st['text'].split()[-1]
-    if st in ('关于','设置','创建'):
+    if st in config_tabs:
         return
     uso[f2id[fstr]].click()
 mw.bind("<Return>",enter)

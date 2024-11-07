@@ -32,7 +32,7 @@ class AboutFrame(object):
         self.frame=Frame(master)
         #main scrolledtext
         self._main_st=ScrolledText(self.frame)
-        self._main_st.pack(fill=BOTH,expand=True)
+        #self._main_st.pack(fill=BOTH,expand=True)
         self._main_st.tag_config('about',font=('Consolas',14))#设置字体
         self._main_st.insert(1.0,'''\
         Welcome to SWDChat {v}
