@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on <http://swdstudio.github.com>.
 
-
+#这是一个测试功能，尚未被加入到主程序之中
 #ui:文件管理
 from tkinter import *
 from tkinter import messagebox
