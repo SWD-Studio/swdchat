@@ -15,7 +15,7 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on <http://swdstudio.github.com>.
 
-#这是一个测试功能，尚未被加入到主程序之中
+
 #ui:文件管理
 from tkinter import *
 from tkinter import messagebox
@@ -45,17 +45,19 @@ class FileFrame(object):
         self.bg=''
         self.img=img
         self.location=location
+        self.filename=filename
         if self.img:
             self._img_l=Label(master=self.frame,image=img)
 
         self._text_f=Frame(master=self.frame)
-        self._name_l=Label(master=self._text_f,text=filename,font=(15),foreground='blue')
+        self._name_l=Label(master=self._text_f,text=self.filename,font=(15),foreground='blue')
+        self._name_l.bind('<ButtonRelease-1>',self.openfile)
         self._intros=f'''From:{fromuser}  code:{source}'''+ f'''\nloaction:{location}'''
         self._intro_l=Label(master=self._text_f,text=self._intros)
 
         self._button_f=Frame(master=self.frame,style='default.TFrame')
         self._del_f=NULL
-        self._opencata_f=NULL
+        self._opencata_f=self.openfiledir
         self._del_b=Button(master=self._button_f,text='Delete',command=self._del_f)
         self._opencata_b=Button(master=self._button_f,text='打开文件夹',command=self._opencata_f)
 
@@ -70,8 +72,20 @@ class FileFrame(object):
         self._button_f.pack(side=RIGHT)
         self._text_f.pack(fill=BOTH,expand=True)
 
-    def openfile(self):
-        os.system(self.location+''+self.filename)
+    def openfile(self,*args):
+        if args:
+            logging.info('file open is called'+str(args))
+        print(self.location+'''\\'''+self.filename)
+        os.startfile(self.location+'''\\'''+self.filename)
+
+    def openfiledir(self)->None:
+        os.system("explorer.exe "+self.location)
+
+    def delete(self,func):#@
+        self._del_f=func
+        self._del_b.config(command=self._del_f)
+        return func
+
 class FileManageFrame(object):
     ...
 
@@ -80,55 +94,16 @@ class FileManageFrame(object):
 def _demo():
     demotk=Toplevel()
     demotk.geometry('%dx%d'%(700,120))
-    a=FileFrame(master=demotk,filename='aaa.data',
-                 location="C:/users/gqm/aaa.data",
+    a=FileFrame(master=demotk,filename='license.txt',
+                 location=".",
                  source='wjx',fromuser='baboon',
                  img=PhotoImage(file='.\icons\default.png'))
     a.pack()
     a.frame.pack(expand=True,fill=BOTH)
+    a.delete(lambda :print('aaa'))
     a.pack()
     demotk.mainloop()
     
-def _demo2():
-    demotk=Tk()
-    st=Style(master=demotk)
-    st.configure('aa.TFrame',background='green')
-    a=Frame(master=demotk,style='aa.TFrame')
-    l=Label(master=a,text='aaaa',background='')
-    l.bind('<ButtonRelease-1>',lambda *args: print('aaa'))
-    a.pack(fill=BOTH,expand=True)
-    l.pack()
-    _name_l=Label(master=demotk,text='aaaaaaa')#,background='ffff00')
-    _name_l.pack()
-    #_name_l.tag_add('underline','1.0',END)
-    #_name_l.tag_configure('underline',underline=True)
-    demotk.geometry('%dx%d'%(500,400))
-    demotk.mainloop()
-
-def _demo1():
-    'demo function'
-    demotk=Tk()
-    #democf.pack(expand=True,fill=BOTH)
-    #b=Button(activebackground='red')
-    style1=Style()
-    style1.configure('filelayout.TFrame',#background='black',
-                    foreground='white',relief=SUNKEN)
     
-    #b.pack()
-    f=Frame(style='filelayout.TFrame')
-    #f.config(style=style1)
-    s=Button(master=f)
-    a=Entry(master=f)
-    b=Entry(master=demotk)
-    #c=ButtonBox(master=f)
-    #c.pack()
-    s.pack()
-    a.pack()
-    b.pack()
-    f.pack(expand=True,fill=BOTH)
-    demotk.geometry('%dx%d'%(500,400))
-    demotk.update()
-    demotk.mainloop()
-
 if __name__=='__main__':
     _demo()
