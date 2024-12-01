@@ -14,27 +14,29 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on <http://swdstudio.github.com>.
 
-#ui:关于（首页）
+# ui:关于（首页）
 
-from tkinter import *
-from tkinter.ttk import *
+from tkinter import *  # @UnusedWildImport
+from tkinter.ttk import *  # @UnusedWildImport
 from tkinter.scrolledtext import ScrolledText
 import logging
 
+
 class AboutFrame(object):
     '''To creat a frame to show "about"'''
-    def __init__(self,master=None) -> None:
+
+    def __init__(self, master=None) -> None:
         if master:
-            self.frame=Frame(master=master)
+            self.frame = Frame(master=master)
         else:
             logging.debug('ignore master')
-            self.frame=Frame()
-        self.frame=Frame(master)
-        #main scrolledtext
-        self._main_st=ScrolledText(self.frame)
-        #self._main_st.pack(fill=BOTH,expand=True)
-        self._main_st.tag_config('about',font=('Consolas',14))#设置字体
-        self._main_st.insert(1.0,'''\
+            self.frame = Frame()
+        self.frame = Frame(master)
+        # main scrolledtext
+        self._main_st = ScrolledText(self.frame)
+        # self._main_st.pack(fill=BOTH,expand=True)
+        self._main_st.tag_config('about', font=('Consolas', 14))  # 设置字体
+        self._main_st.insert(1.0, '''\
         Welcome to SWDChat {v}
 
         SWDChat {v} Copyright (C) 2020-2024 SWD Studio
@@ -44,29 +46,32 @@ class AboutFrame(object):
         See the GNU General Public License for more details.
 
         You can contact us on <swdstudio.github.io>.
-        '''.format(v=version),'about')
+        '''.format(v=version), 'about')
         self._main_st.config(state='disabled')
     
-    def pack(self)->None:
-        self._main_st.pack(side='top',fill='both',expand=True)
-        self.frame.pack(fill='both',expand=True)
+    def pack(self) -> None:
+        self._main_st.pack(side='top', fill='both', expand=True)
+        self.frame.pack(fill='both', expand=True)
 
-version='TESTVERSION'
 
-def config(vers:str)->None:
+version = 'TESTVERSION'
+
+
+def config(vers:str) -> None:
     '''设置我的版本'''
     global version
-    version=vers
+    version = vers
 
 
 def _demo():
     '''demo function'''
-    demotk=Tk()
-    demotk.geometry('%dx%d'%(1000,700))
-    demoaf=AboutFrame(master=demotk)#实例化一个CreateFrame对象
+    demotk = Tk()
+    demotk.geometry('%dx%d' % (1000, 700))
+    demoaf = AboutFrame(master=demotk)  # 实例化一个CreateFrame对象
     demoaf.pack()
     demotk.update()
     demotk.mainloop()
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     _demo()

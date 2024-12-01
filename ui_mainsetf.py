@@ -14,95 +14,94 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on <http://swdstudio.github.com>.
 
-#ui:用户设置
+# ui:用户设置
 
-from tkinter import *
-from tkinter.ttk import *
+from tkinter import *  # @UnusedWildImport
+from tkinter.ttk import *  # @UnusedWildImport
 from threading import Thread
-import tkinter.filedialog as filedialog
 import logging
+
 
 def nullfunc(*args):
     pass
 
-MYIP='172.168.50.144'
-MYPORT='19198'
+
+MYIP = '172.168.50.144'
+MYPORT = '19198'
+
+# ihtrupyehj = Style()
+# ihtrupyehj.configure('rl.TEntry', state='readonly')
+
 
 class MainSetFrame(object):
     'To create a "main setting frame"'
-    def __init__(self,username :str,master=None) -> None:
+
+    def __init__(self, username:str, master=None) -> None:
         if master:
-            self.frame=Frame(master=master)
+            self.frame = Frame(master=master)
         else:
             logging.debug('ignore master')
-            self.frame=Frame()
+            self.frame = Frame()
 
-        self.setpathfunc=nullfunc
-        self.setconfirmfunc=nullfunc
-        self._username=username
-        self._default_path=''
+        self.setpathfunc = nullfunc
+        self.setconfirmfunc = nullfunc
+        self._username = username
+        self._default_path = ''
 
-        self._myip_l=Label(self.frame,text='本机IP:%s\n本机端口:%s'%(MYIP,MYPORT))#IP及端口信息
+        self._myip_l = Label(self.frame, text='本机IP:%s\n本机端口:%s' % (MYIP, MYPORT))  # IP及端口信息
 
-        self._name_f=Frame(self.frame)#用户名设定
-        self._name_l=Label(self._name_f,text='用户名:')
-        self._name_e=Entry(self._name_f,text=username)
+        self._name_f = Frame(self.frame)  # 用户名设定
+        self._name_l = Label(self._name_f, text='用户名:')
+        self._name_e = Entry(self._name_f, text=username)
 
-        self._path_f=Frame(self.frame)#下载路径设定
-        self._path_l=Label(self._path_f,text='下载路径:')
-        self._path_e=Entry(self._path_f,state='disabled')
+        self._path_f = Frame(self.frame)  # 下载路径设定
+        self._path_l = Label(self._path_f, text='默认下载路径:')
+        self._path_e = Label(self._path_f, background='white')
         
-        self._path_b=Button(self.frame,text='设置下载路径',command=self._sdf)
-        self._set_b=Button(self.frame,text='保存设置',command=self._setting)
+        self._path_b = Button(self._path_f, text='浏览...', command=self._sdf)
+        self._set_b = Button(self.frame, text='保存设置', command=self._setting)
     
     def pack(self):
-        self._myip_l.pack(side='top',fill='x')
+        self._myip_l.pack(side='top', fill='x')
 
         self._name_l.pack(side='left')
-        self._name_e.pack(side='right',fill='x',expand=True)#,ipadx=85)
-        self._name_f.pack(side='top',fill='x')
+        self._name_e.pack(side='right', fill='x', expand=True)  # ,ipadx=85)
+        self._name_f.pack(side='top', fill='x')
 
         self._path_l.pack(side='left')
-        self._path_e.pack(side='right',fill='x',expand=True)#,ipadx=85)
-        self._path_f.pack(side='top',fill='x')
-
-        self._path_b.pack()
+        self._path_b.pack(side='right')
+        self._path_e.pack(side='right', after=self._path_b, fill='x', expand=True)
+        self._path_f.pack(side='top', fill='x')
+        
         self._set_b.pack()
 
-        self.frame.pack(fill='both',expand=True)
+        self.frame.pack(fill='both', expand=True)
 
-    def _setpath(self):#设定下载路径
-        self._path_e.config(state='normal')
-        self._path_e.delete(0,'end')
-        self._path_e.insert(0,filedialog.askdirectory())
-        self._path_e.config(state='disabled')
-        
+    def _setpath(self):  # 设定下载路径
+        self._path_e['text'] = filedialog.askdirectory()
 
-    def pathset(self,func):#@
-        self.setpathfunc=func
+    def pathset(self, func):  # @
+        self.setpathfunc = func
         return func
 
-    def _sdf(self):#设定下载路径
-        self.sdfth=Thread(daemon=True,target=self._setpath)
+    def _sdf(self):  # 设定下载路径
+        self.sdfth = Thread(daemon=True, target=self._setpath)
         self.sdfth.start()
 
     def _setting(self):
-        self._default_path=self._path_e.get()
-        self._username=self._name_e.get()
+        self._default_path = self._path_e['text']
+        self._username = self._name_e.get()
         self.setconfirmfunc(self._username)
         self.setpathfunc(self._default_path)
 
-    def setting(self,func):#保存设置 
-        self.setconfirmfunc=func
+    def setting(self, func):  # 保存设置 
+        self.setconfirmfunc = func
         return func
 
     def reset(self):
-        self._name_e.delete(0,'end')
-        self._name_e.insert(0,self.username)
-        self._path_e.config(state='normal')
-        self._path_e.delete(0,'end')
-        self._path_e.insert(0,self.default_path)
-        self._path_e.config(state='disabled')
+        self._name_e.delete(0, 'end')
+        self._name_e.insert(0, self.username)
+        self._path_e['text'] = self.default_path
 
     @property
     def default_path(self):
@@ -112,24 +111,29 @@ class MainSetFrame(object):
     def username(self):
         return self._username
 
-def ipconfig(ip:str,port:str)->None:
+
+def ipconfig(ip:str, port:str) -> None:
     '设置我的IP和端口'
-    global MYIP,MYPORT
-    MYIP=ip
-    MYPORT=str(port)
+    global MYIP, MYPORT
+    MYIP = ip
+    MYPORT = str(port)
+
 
 def _demo():
     'demo function'
+
     def test(inp):
         print (inp)
-    demotk=Tk()
-    demomsf=MainSetFrame(master=demotk)#实例化一个MainSetFrame对象
+
+    demotk = Tk()
+    demomsf = MainSetFrame(master=demotk, username='GQM')  # 实例化一个MainSetFrame对象
     demomsf.setting(test)
-    demomsf.pathset(lambda a:print(demomsf.username,demomsf.default_path))
+    demomsf.pathset(lambda a:print(demomsf.username, demomsf.default_path))
     demomsf.pack()
-    demotk.geometry('%dx%d'%(1000,700))
+    demotk.geometry('%dx%d' % (1000, 700))
     demotk.update()
     demotk.mainloop()
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     _demo()
