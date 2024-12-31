@@ -7,8 +7,8 @@
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/SWD-Studio/SWDChat/total)
 
 ## 一个免费，自由，开源的局域网去中心化信息传输交流工具
-
-![SWDChat-ico](https://github.com/SWD-Studio/swdchat/assets/164627892/a479cb8d-6356-4126-96e8-ce1cad670818)
+![snapshot](https://github.com/user-attachments/assets/f296a0b2-5a56-4a38-af2b-1253fb486e6f)
+![preview](https://github.com/user-attachments/assets/b39d7628-b407-4202-891d-7fbe320efb81)
 
 SWDChat v2.1.0是由SWD Studio以[GNU GPLv3协议](https://www.gnu.org/licenses/gpl-3.0.en.html#license-text)于CST 2024年12月31日发布的软件
 
