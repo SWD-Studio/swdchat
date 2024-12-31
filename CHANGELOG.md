@@ -1,6 +1,14 @@
 # SWDChat
 
 ## Change log
+
+####  [v2.1.0](https://github.com/swdstudio/swdchat/releases/tag/v2.1.0 "前往") 
+1. 新增托盘区图标
+2. 新增文件分享与下载页面
+3. 图片使用预览框，使之大小合适，单击打开
+4. 启动动画
+5. 应用新的按钮图标
+
 ####  [v2.0.0](https://github.com/swdstudio/swdchat/releases/tag/v2.0.0 "前往") 
 1. 新增群组修改功能
 

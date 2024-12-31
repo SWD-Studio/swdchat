@@ -17,11 +17,12 @@
 # ui:用户设置
 
 from tkinter import *  # @UnusedWildImport
+from tkinter import filedialog
 from tkinter.ttk import *  # @UnusedWildImport
 from threading import Thread
 import logging
 
-
+from scicons import iconmap
 def nullfunc(*args):
     pass
 
@@ -56,10 +57,10 @@ class MainSetFrame(object):
 
         self._path_f = Frame(self.frame)  # 下载路径设定
         self._path_l = Label(self._path_f, text='默认下载路径:')
-        self._path_e = Label(self._path_f, background='white')
+        self._path_e = Label(self._path_f, background='white',)# text='%USERPROFILE%/Download/SC')
         
-        self._path_b = Button(self._path_f, text='浏览...', command=self._sdf)
-        self._set_b = Button(self.frame, text='保存设置', command=self._setting)
+        self._path_b = Button(self._path_f, image=iconmap['FOLDER'], command=self._sdf)
+        self._set_b = Button(self.frame, image=iconmap['CONFIRM'], command=self._setting)
     
     def pack(self):
         self._myip_l.pack(side='top', fill='x')

@@ -13,13 +13,11 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.ysepan.com.
-# 20241123
-# 增加路由fileinfo，用于获取文件信息
-# 增加函数getfileinfo，用于获取文件信息
-# 把init启动的服务器绑定至0.0.0.0(本机上所有IP)
-# 整理代码
-# 缺省路径设定为'.'
+# 20241220
+# 添加响应头字段Sha256
+# 添加检查：是否有文件跳跃攻击
 import socket
+import hashlib
 from json import dumps, loads
 import os
 import threading
@@ -46,7 +44,8 @@ def getip():
     return myip
 
 
-class InvalidAddress(Exception):pass
+class InvalidAddress(Exception):
+    pass
 
 
 fmap = {}  # 记录本机分享代码对应的文件，格式为code:fpath
@@ -61,6 +60,15 @@ def http_response(self, request, response):  # 防止非2XX响应码报错 @Unus
 
 HTTPErrorProcessor.http_response = http_response
 HTTPErrorProcessor.https_response = http_response
+
+
+def calcsha256(fpath: str)->str:
+    print(fpath)
+    with open(fpath, 'rb') as fp:
+        fhash = hashlib.sha256()
+        for chunk in iter(lambda: fp.read(4096), b''):
+            fhash.update(chunk)
+    return fhash.hexdigest()
 
 
 class SHRH(BaseHTTPRequestHandler):
@@ -122,6 +130,7 @@ class SHRH(BaseHTTPRequestHandler):
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Filename", quote(fmap[ucode].split('/')[-1]))
                 self.send_header("Size", str(fs[6]))
+                self.send_header('Sha256', calcsha256(fmap[ucode]))
                 self.end_headers()
             except:
                 self.send_error(HTTPStatus.NOT_FOUND, 'File not found.')
@@ -164,10 +173,11 @@ class SHRH(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(b'')
         except Exception as e:
-            print('An exception has occurred while responding a POST request: ', type(e), e, file=stderr)
+            print('An exception has occurred while responding a POST request: ', type(
+                e), e, file=stderr)
 
 
-def default_addr(ip:str, port:str):
+def default_addr(ip: str, port: str):
     """设定send函数默认发送地址，无返回值
 格式：default_addr(ip:str, port:str)
 """
@@ -175,7 +185,7 @@ def default_addr(ip:str, port:str):
     daddr = prot + ip + ':' + str(port)  # 拼接地址
 
 
-def send(obj:object, ip:str=None, port:int=None, timeout:int=2):
+def send(obj: object, ip: str=None, port: int=None, timeout: int=2):
     """发送可以被转换为json字符串的Python对象
 格式：send(obj:onject, ip:str, port:int, timeout:int)
 obj：要发送的对象
@@ -192,7 +202,11 @@ ip, port若不填则使用default_addr设定的默认IP地址及端口
     if addr == None:
         raise InvalidAddress("地址无效")
     s = dumps(obj)  # 转换为json
-    r = urlopen(addr, data=s.encode(), timeout=timeout)  # 发送对象
+    try:
+        r = urlopen(addr, data=s.encode(), timeout=timeout)  # 发送对象
+    except ImportError as e:
+        ...
+        print(e)
     return r.getcode(), r.read()
 
 
@@ -204,7 +218,7 @@ def receive(func):
     return func
 
 
-def downpath(path:str=None):
+def downpath(path: str=None):
     """为filedown设定文件下载路径,不传入参数返回当前默认路径
 """
     global defpath
@@ -213,7 +227,7 @@ def downpath(path:str=None):
     defpath = path
 
 
-def filedown(url:str, file:str=None, report=None):
+def filedown(url: str, file: str=None, report=None):
     """文件下载
 格式：filedown(url:str, file:str, report=None)
 从指定的URL下载文件，file为文件名
@@ -235,37 +249,43 @@ report为回调函数
         ip = addr[0]
         port = int(addr[1])
         code = t.path.split('/')[2]  # 获取文件分享代码
-        file = getfileinfo(ip, port, code)
+        file = getfileinfo(ip, port, code)[0]
     try:
         file = (defpath + '/' + file).replace('//', '/')
     except Exception:
         ...
-    # print('swdlc',file)
+    '''if os.path.commonprefix((os.path.realpath(file), os.path.realpath(defpath))) != os.path.realpath(defpath):
+        print(os.path.commonprefix((os.path.realpath(file), defpath)),
+              os.path.realpath(defpath))
+        return'''
     HTTPErrorProcessor.https_response = http_response_backup
     HTTPErrorProcessor.http_response = http_response_backup
-    f, h = urlretrieve(url, file, reporthook=reporthook if report != None else None)  # @UnusedVariable
+    f, h = urlretrieve(url, file, reporthook=reporthook if report !=  # @UnusedVariable
+                       None else None)
     HTTPErrorProcessor.http_repsonse = HTTPErrorProcessor.https_response = http_response
     file = open(file)
     file.close()
 
 
-def getfileinfo(ip:str, port:int, code:str):
+def getfileinfo(ip: str, port: int, code: str):
     code = quote(code)
     url = prot + ip + ':' + str(port) + '/fileinfo/' + code
     t = urlopen(url)
     h = str(t.info()).split('\n')
     fn = ''
-    size = ''
+    size,sha256 = '',''
     for i in h:
         if i.startswith('Filename'):
             fn = unquote(i.split(':')[1][1:])
         elif i.startswith('Size'):
             size = unquote(i.split(':')[1][1:])
-    info = fn, size
+        elif i.startswith('Sha256'):
+            sha256 = unquote(i.split(':')[1][1:])
+    info = fn, size, sha256
     return info
 
 
-def share(code:str, filepath:str, times:int=-1):
+def share(code: str, filepath: str, times: int=-1):
     """创建分享链接
 code：分享代码
 filepath：文件名(含路径)
@@ -288,7 +308,7 @@ def rmshare(code):
     return 0
 
 
-def init(port:int=0, daemon:bool=True, enable_TLS:bool=True):
+def init(port: int=0, daemon: bool=True, enable_TLS: bool=True):
     """初始化函数，应当在导入swdlc后立即调用
 port：本机服务器端口，默认随机
 daemon：设置服务器线程是否为守护线程
@@ -315,7 +335,8 @@ enable_TLS：设置服务器是否使用https
     if enable_TLS:  # 套接字
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)  # 创建上下文
         context.load_cert_chain(certfile='cert.pem', keyfile='key.pem')  # 证书
-        httpd.socket = context.wrap_socket(httpd.socket, server_side=True)  # 修改套接字
+        httpd.socket = context.wrap_socket(
+            httpd.socket, server_side=True)  # 修改套接字
     t = threading.Thread(daemon=daemon, target=httpd.serve_forever)  # 创建线程
     t.start()  # 启动线程
     return 0

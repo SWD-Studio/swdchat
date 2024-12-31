@@ -13,18 +13,32 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.ys168.com.
-print('请稍候...')
 
+from tkinter import *  # @UnusedWildImport
+from tkinter.ttk import *  # @UnusedWildImport
+mw = Tk()  # SWDChat主窗口
+mw.withdraw()
+import ui_snapshot
+
+# 隐藏命令行窗口
 import ctypes
+import platform
+if platform.system()=="Windows":
+    whnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if whnd != 0:
+        ctypes.windll.user32.ShowWindow(whnd, 0)
+        ctypes.windll.kernel32.CloseHandle(whnd)
+
 from threading import Thread
 from os import system
 from urllib.error import HTTPError, URLError
 from collections import deque
-from tkinter import *  # @UnusedWildImport
-from tkinter.ttk import *  # @UnusedWildImport
-from tkinter.messagebox import showerror, showinfo, askokcancel
+from tkinter.messagebox import askyesnocancel, showerror, showinfo, askokcancel
 from time import time
 from json import dumps, loads
+
+import pystray
+from PIL import Image  # @Reimport
 
 import swdlc as lc
 from swdlc import getip
@@ -32,6 +46,37 @@ import schat
 import ui_groupset
 import ui_aboutf
 import ui_mainsetf
+import scwidgets
+import filemanager
+# 系统托盘
+
+
+def _quit():             # 自定义回调函数
+    icon.stop()                        # 对象停止方法
+    mw.quit()
+    mw.destroy()
+
+
+def hide_window(*args):
+    print('bbbbbbb')
+    mw.withdraw()
+    icon.notify('窗口已隐藏到托盘区', 'SWDChat')
+
+
+# 创建图标对象
+icon_image = Image.open("logo.ico")           # 打开 ICO 图像文件并创建一个 Image 对象
+menu = (pystray.MenuItem(text='打开窗口', action=mw.deiconify),
+        pystray.Menu.SEPARATOR, pystray.MenuItem(text='退出', action=_quit))  # 创建菜单项元组
+# 创建 PyStray Icon 对象，并传入关键参数
+icon = pystray.Icon("swdchat", icon_image, "SWDChat", menu)
+
+# 显示图标
+# 启动托盘图标目录
+icon_thread = Thread(target=icon.run, daemon=True)
+icon_thread.start()
+info = icon.notify
+
+# loop_thread = Thread(target=mw.mainloop,daemon=True)
 
 # 以chatid为键
 un = {}  # chatid:用户名
@@ -44,7 +89,7 @@ f2id = {}  # str(frame):chatid
 
 port = 36144  # 首选端口
 imgs = deque()  # 存放PhotoImage对象
-version = '2.0.0'  # 版本号
+version = '2.1.0'  # 版本号
 if lc.getip() == '127.0.0.1':  # 若未连接互联网，地址应为127.0.0.1
     print('程序无法启动,请检查网络连接.')
     system('pause>>nul')
@@ -82,7 +127,6 @@ ui_groupset.ipconfig(ip=lc.getip(), port=port)
 ui_aboutf.config(vers=version)
 ui_mainsetf.ipconfig(ip=lc.getip(), port=port)
 system('mkdir img>>nul')  # 创建img文件夹
-mw = Tk()  # SWDChat主窗口
 mw.title('SWDChat %s' % version)  # 设定标题
 mw.iconbitmap('logo.ico')  # 设定图标
 mw.update()  # 刷新窗口
@@ -112,9 +156,10 @@ user_n.add(set_f.frame, text='{:>12}'.format('设置'))  # 添加到选项卡
 
 @set_f.setting
 def setting(name):  # 保存设置 @UnusedVariable
-        
-        schat.username = set_f.username
-        username_l.config(text='用户名：' + schat.username)
+
+    schat.username = set_f.username
+    lc.downpath(set_f.username)
+    username_l.config(text='用户名：' + schat.username)
 
 # set_f end
 
@@ -136,7 +181,7 @@ def new(newn, userlist):  # 创建新群组
     so.name = newn  # 修改群组名
     so.sendnew()  # 向各用户发送创建新群组
     user_n.insert(2, frm,
-                text='{:>14}'.format(newn))  # 添加到选项卡
+                  text='{:>14}'.format(newn))  # 添加到选项卡
     # newname_e.delete(0, 'end')#清空
     # new_s.delete(1.0, 'end')
     user_n.select(frm)  # 打开新创建的群组
@@ -152,6 +197,16 @@ modify_f = ui_groupset.GroupSetFrame(master=msg_f, method=ui_groupset.CONFIG)
 user_n.insert(1, modify_f.frame, text='{:>12}'.format('修改'))  # 添加到选项卡
 user_n.hide(modify_f.frame)
 
+# file manager
+filemanager.init()
+lc.downpath('.')
+filedw=filemanager.DownloadManageFrame()
+filesh=filemanager.ShareManageFrame()
+user_n.insert(1, filedw, text='{:>12}'.format('文件下载'))  # 添加到选项卡
+user_n.insert(1, filesh, text='{:>12}'.format('文件分享'))  # 添加到选项卡
+filedw.pack(False)
+filesh.pack(False)
+# file manager end
 
 @modify_f.fetch
 def modify(name, userlist):
@@ -189,10 +244,10 @@ def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Scha
         modify_id = self.chatid
         userlist = list(self.address)
         for i in range(len(userlist)):
-            userlist[i] = {'ip':userlist[i][0],
-                         'port':userlist[i][1],
-                         'username':self.usernames['{}:{}'.format(*userlist[i])],
-                         }
+            userlist[i] = {'ip': userlist[i][0],
+                           'port': userlist[i][1],
+                           'username': self.usernames['{}:{}'.format(*userlist[i])],
+                           }
         # print(userlist)
         temp_userlist = self.address[:]
         modify_f.initsets(msgs.name, userlist)
@@ -208,7 +263,8 @@ def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Scha
         user_n.select(modify_f.frame)
 
     msgs.modify = _modify
-    msgs.usernames = Recdict({'{}:{}'.format(*a):'' for a in addr})  # 用于记录用户名，"IP:port":用户名
+    # 用于记录用户名，"IP:port":用户名
+    msgs.usernames = Recdict({'{}:{}'.format(*a): '' for a in addr})
     msgs.mainloop()  # 加载控件
     if chatid != None:  # 代表该群组已存在，但本机首次收到消息
         msgs.chatid = chatid  # 覆盖自动生成的chatid
@@ -226,7 +282,7 @@ def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Scha
     return msgf  # 返回Frame对象
 
 
-def sharedown(filename:str, url:str, path:str):  # 下载分享文件
+def sharedown(filename: str, url: str, path: str):  # 下载分享文件
     # print('fd',path)
     if path[0] == '/':  # 未设置默认路径
         path = '.' + path  # 把当前路径作为默认路径
@@ -288,7 +344,7 @@ def receive(obj):  # 接收消息
     if obj['chatid'] in uso and obj['addrver'] < uso[obj['chatid']].addrver:
         uso[obj['chatid']].sendnew()
         Thread(target=lc.send,
-                   args=(uso[obj['chatid']].sendnew(False), *obj['from'].split(':'))).start()
+               args=(uso[obj['chatid']].sendnew(False), *obj['from'].split(':'))).start()
     color = 'black'  # 默认颜色
     nowtime = schat.gettime()  # 获取当前时间
     user_n.insert(2, frm, text='{:>14}'.format(obj['name']))  # 把当前群组移到第一个
@@ -299,7 +355,7 @@ def receive(obj):  # 接收消息
     if from_ != '{}:{}'.format(getip(), port):  # 收到其他用户发来的消息
         color = 'blue'
         sth = Thread(daemon=True, target=info, args=(
-            ctypes.c_char_p(('新消息(来自 %s)' % obj['name']).encode('ANSI')),))
+            'SWDChat', ('新消息(来自 %s)' % obj['name'])),)
         sth.start()
     s = '[%s] %s  From: %s' % (obj['username'], nowtime, from_)
     if obj.isErr:
@@ -312,28 +368,30 @@ def receive(obj):  # 接收消息
             userlist[i] = '{}:{}'.format(*userlist[i])
         color = 'orange'
         mtext.insert(1.0,
-                     '当前成员列表：\n[IP:端口号,用户名]\n' + str(['{}\",\"{}'.format(j, so.usernames[j]) for j in userlist]) + '\n'
-                     , color)
+                     '当前成员列表：\n[IP:端口号,用户名]\n' + str(['{}\",\"{}'.format(j, so.usernames[j]) for j in userlist]) + '\n', color)
     if obj['type'] == 'new':  # 用'new'表示创建新群组，或成员修改
         pass
     elif obj['type'] == 'img':  # 用'img'表示图片
         imgname = obj['imgname']
         path = '.\\img\\' + imgname
         try:
-            p = PhotoImage(file=path)
+            if lc.calcsha256(path) != obj['sha256']:
+                raise FileNotFoundError
         except Exception:
             lc.filedown(obj['url'], path)
-            p = PhotoImage(file=path)
+        p = scwidgets.ImageDisplayLabel(img_path=path,width=400,height=400)
         mtext.insert('1.0', '\n')
-        mtext.image_create(1.0, image=p)
+        mtext.window_create(1.0, window=p)
         imgs.append(p)
     elif obj['type'] == 'file':  # 用'file'表示文件
         filename = obj['filename']
 
         def _downbf(*a):  # @UnusedVariable
-            sharedown(filename, obj['url'], set_f.default_path + '/' + filename)
+            sharedown(filename, obj['url'],
+                      set_f.default_path + '/' + filename)
 
-        fb = Button(uf[obj['chatid']], text='下载 %s' % filename, command=_downbf)
+        fb = Button(uf[obj['chatid']], text='下载 %s' %
+                    filename, command=_downbf)
         mtext.insert(1.0, '\n')
         mtext.window_create('1.0', window=fb)
     elif obj['type'] == 'msg':  # 用'msg'表示文字消息
@@ -349,18 +407,20 @@ def receive(obj):  # 接收消息
     if st != obj['name']:  # 有新消息的群组不处于选中状态
         c = user_n.tab(uf[obj['chatid']], 'text')
         if '!' not in c:
-            user_n.tab(uf[obj['chatid']], text=c.replace('    ', '  ! ', 1))  # 添加一个'!'提示
+            user_n.tab(uf[obj['chatid']], text=c.replace(
+                '    ', '  ! ', 1))  # 添加一个'!'提示
 
 
-config_tabs = ('关于', '设置', '创建', '修改')
+config_tabs = ('关于', '设置', '创建', '修改', '文件下载', '文件分享')
 
 
 def ntd(*a):  # 处理选项卡单击事件 @UnusedVariable
+    print('aaaaaa')
     index = user_n.index('current')
     st = user_n.tab(index)
     st = st['text'].split()[-1]
     if st != '修改':
-        user_n.hide(modify_f.frame) 
+        user_n.hide(modify_f.frame)
     fstr = user_n.tabs()[index]
     if st in config_tabs:
         if st == '设置':
@@ -378,9 +438,6 @@ def enter(*a):  # 处理回车键事件(调用'发送'按钮) @UnusedVariable
     if st in config_tabs:
         return
     uso[f2id[fstr]].click()
-
-
-def info(*args, **kwargs):pass
 
 
 try:
@@ -409,20 +466,30 @@ try:
 except Exception as e:
     print('bak exception:', e)
 # 加载动态链接库
-try:
-    showinfodll = ctypes.WinDLL('./showinfo.dll')
-    info = showinfodll.info
-except Exception:
-    info = lambda *args, **kwargs:...  # @UnusedVariable
+# try:
+#     showinfodll = ctypes.WinDLL('./showinfo.dll')
+#     info = showinfodll.info
+# except Exception:
+#     info = lambda *args, **kwargs:...  # @UnusedVariable
 mw.bind("<Return>", enter)
 mw.bind("<<NotebookTabChanged>> ", ntd)
 user_n.add(about_f.frame, text='{:>12}'.format('关于'))
 user_n.pack(fill=BOTH, expand=True)
 msg_f.pack(fill=BOTH, expand=True)
 myip = lc.getip()
-# 隐藏命令行窗口
-whnd = ctypes.windll.kernel32.GetConsoleWindow()
-if whnd != 0:
-    ctypes.windll.user32.ShowWindow(whnd, 0)
-    ctypes.windll.kernel32.CloseHandle(whnd)
+hidewindowdefault=None
+def unmap_switch(*args):
+    global hidewindowdefault
+    if hidewindowdefault==None:
+        hidewindowdefault=askyesnocancel("SWDChat","您是否希望将窗口隐藏到托盘区？\n如果关闭窗口,您会收不到之后收到的消息")
+    if hidewindowdefault==None:
+        return
+    if hidewindowdefault:
+        hide_window()
+    else:
+        mw.destroy()
+# mw.bind("<Unmap>", hide_window)
+ui_snapshot.delete()
+mw.protocol("WM_DELETE_WINDOW", unmap_switch)
+mw.deiconify()
 mainloop()

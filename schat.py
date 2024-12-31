@@ -14,12 +14,9 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.ysepan.com.
 
-# 20241201
+# 20241230
 # SWDChat专用版
-# 按钮被禁用时忽略回车键
-# _send方法可以设定为不发送
-import swdlc as lc
-from swdlc import getip
+# 图片更新
 from threading import Thread
 from tkinter import *  # @UnusedWildImport
 from tkinter.filedialog  import *  # @UnusedWildImport
@@ -28,6 +25,9 @@ from tkinter.ttk import *  # @UnusedWildImport
 from tkinter.messagebox import showerror
 from time import localtime, strftime, time
 
+import swdlc as lc
+from swdlc import getip
+from scicons import iconmap
 # 消息传递格式(不同类型的消息可能略有不同)
 # {'username':用户名,'type':内容类型,'msg':内容,
 # 'addr':地址,'name':群组名,'chatid':群组id,
@@ -105,6 +105,7 @@ class SchatFrame(object):
                           type='img',
                           imgname=fp.split('/')[-1],
                           url='https://%s:%d/s/%s' % (getip(), myport, imgid),
+                          sha256=lc.calcsha256(fp)
                           )
 
     def _sendfile(self, send=True):
@@ -182,10 +183,10 @@ class SchatFrame(object):
         self.mtext.tag_config('orange', foreground='orange')
         self.mtext.tag_config('red', foreground='red')
         self.mtext.tag_config('blue', foreground='blue')
-        self.buttons['msg'] = Button(self.btns_f, text='发送', command=_click)
-        self.buttons['img'] = Button(self.btns_f, text='发送图片', command=_click_img)
-        self.buttons['file'] = Button(self.btns_f, text='发送文件', command=_click_file)
-        self.buttons['modify'] = Button(self.btns_f, text='修改群组', command=_click_modify)
+        self.buttons['msg'] = Button(self.btns_f, image=iconmap['POST'], command=_click)
+        self.buttons['img'] = Button(self.btns_f, image=iconmap['ADDIMG'], command=_click_img)
+        self.buttons['file'] = Button(self.btns_f, image=iconmap['ADDFILE'], command=_click_file)
+        self.buttons['modify'] = Button(self.btns_f, image=iconmap['SETTING'], command=_click_modify)
         self.cw.bind("<Return>", _click)
         self.msg.pack(side='left', fill=X, expand=True)
         self.buttons['msg'].pack(side='right')

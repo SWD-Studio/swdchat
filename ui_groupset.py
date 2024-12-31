@@ -22,6 +22,7 @@ from tkinter.ttk import *  # @UnusedWildImport
 from tkinter.scrolledtext import ScrolledText
 import logging
 
+from scicons import iconmap
 
 class UserFrame(object):
     'To creat a user frame show user'
@@ -117,10 +118,10 @@ class GroupSetFrame(object):
         self._main_s = ScrolledText(master=self.frame)
         # buttons
         self._button_f = Frame(master=self.frame)
-        self._cancel_b = Button(master=self._button_f, text='取消' if self.method == NEW else '删除', command=self._cancelf)
-        self._add_b = Button(master=self._button_f, text='添加用户', command=self.add_blank)
-        self._confirm_b = Button(master=self._button_f, text='确定', command=self.getall)
-        self._reset_b = Button(master=self._button_f, text='重置', command=self.reset)
+        self._cancel_b = Button(master=self._button_f, image=iconmap['LEFT'] if self.method == NEW else iconmap['DELETE'], command=self._cancelf)
+        self._add_b = Button(master=self._button_f, image=iconmap['ADD'], command=self.add_blank)
+        self._confirm_b = Button(master=self._button_f, image=iconmap['CONFIRM'], command=self.getall)
+        self._reset_b = Button(master=self._button_f, image=iconmap['RETRY'], command=self.reset)
         # Window arrange
         self._top_l.pack(side='top', fill='x')
         self._name_l.pack(side='left')
