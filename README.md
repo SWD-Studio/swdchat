@@ -12,6 +12,8 @@
 
 SWDChat v2.1.0是由SWD Studio以[GNU GPLv3协议](https://www.gnu.org/licenses/gpl-3.0.en.html#license-text)于CST 2024年12月31日发布的软件
 
+## 跳转至[用户文档](./HELP.md)
+
 ## 特点
 
 1. 完全的去中心化
