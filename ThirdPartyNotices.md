@@ -18,6 +18,8 @@ MaterialSymbolsRefresh.png
 MaterialSymbolsAdd2.png
 MaterialSymbolsDeleteOutline.png
 MaterialSymbolsFolderOutlineSharp.png
+MaterialSymbolsMic.png
+MaterialSymbolsSquareRounded.png
 
 
 
