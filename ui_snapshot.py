@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2024  SWD Studio
+#    Copyright (C) 2020-2025  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ from PIL import Image, ImageTk
 def create():
     global splash_win, img_tk
     splash_win = Toplevel()  # 创建一个Tkinter窗口实例
-    splash_win.title("启动画面范例")  # 设置窗口标题
     img_dir = './icons/snapshot.jpg'
     img_open = Image.open(img_dir)
     max_size = (767 // 2, 432 // 2)  # 设置最大尺寸

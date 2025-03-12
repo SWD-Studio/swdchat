@@ -1,5 +1,5 @@
 # -*- encoding=utf-8 -*-
-#    Copyright (C) 2020-2024  SWD Studio
+#    Copyright (C) 2020-2025  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,8 +15,9 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on <http://swdstudio.github.com>.
 
-_updated_='20241230'
+#250109
 #slight change
+#zh-hans
 import logging
 import threading
 import json
@@ -195,7 +196,7 @@ class FileFrame(object):
 
         elif __value == 'interrupt':
             self.state = 'error'
-            self._pro_l.config(text='Interrupted while downloading')
+            self._pro_l.config(text='下载时发生异常')
         else:
             raise TypeError('Bad state ' + str(__value))
 
@@ -203,7 +204,7 @@ class FileFrame(object):
         '''proce:float type,between 0.0-1.0'''
         if type(proce) != type(0.1) or proce < 0 or proce > 1:
             raise IndexError("proce can not be %s" % (str(proce)))
-        self._pro_l.config(text='Downloading %d' % (proce * 100) + '%')
+        self._pro_l.config(text='下载中，已完成 %d' % (proce * 100) + '%')
         self._probar.setpro(proce=proce)
 
     def openfile(self, *args):
@@ -253,12 +254,12 @@ class FileFrame(object):
             return
         if name != self.filename or size != self.size:
             self.filename, self.size = name, size
-            self._intro_l.config(text=f'''来自 :{self.fromip}:{self.fromport}  \n代码 :{self.code} \n大小 :{sizetransform(size)}''' + f'''\n位置 :{self.location}''')
+            self._intro_l.config(text=f'''来自 :{self.fromip}:{self.fromport}  \n分享代码 :{self.code} \n大小 :{sizetransform(size)}''' + f'''\n位置 :{self.location}''')
             self._name_l.config(text=self.filename)
-            ans = messagebox.askokcancel('SWDChat', f'''File infomation has been changed.
-Sure to continue?
-Name:{name}
-Size:{sizetransform(size)}''')
+            ans = messagebox.askokcancel('SWDChat', f'''检测到目标文件信息已发生变化,
+是否继续?
+文件名:{name}
+大小:{sizetransform(size)}''')
             if not ans:
                 return
 
@@ -292,7 +293,7 @@ class DownloadManageFrame(Frame):
         # super
         Frame.__init__(self,*args, **kwargs)
         # top lable
-        self._top_l = Label(text='DownloadManager.', master=self)
+        self._top_l = Label(text='文件下载管理', master=self)
         # main scrolledtext
         self._main_s = ScrolledText(master=self)
         # new config area
@@ -305,11 +306,14 @@ class DownloadManageFrame(Frame):
         self._code_e = Entry(master=self._newbot_f)
         self._ip_l = Label(master=self._newtop_f, text='IP')
         self._port_l = Label(master=self._newtop_f, text='PORT')
-        self._code_l = Label(master=self._newbot_f, text='代码')
+        self._code_l = Label(master=self._newbot_f, text='分享代码')
         self._adddl_b = Button(master=self._newtop_f, image=iconmap['DOWNLOAD'], command=self.adddl)
         self._add_b = Button(master=self._newbot_f, image=iconmap['ADD'], command=self.add)
+        
+        self._main_s.config(state=DISABLED)
         # Window arrange ends
         self._count_user = 0
+
 
     def __del__(self) -> None:
         'Warn not to delete the frame'
@@ -353,7 +357,7 @@ class DownloadManageFrame(Frame):
         try:
             port=int(port)
         except ValueError:
-            messagebox.showerror('SWDChat','Bad Port')
+            messagebox.showerror('SWDChat','输入错误端口')
             return
         return self.add_file(
                  code=code, fromuser=ip, fromport=int(port),
@@ -485,7 +489,7 @@ class ShareFrame(object):
         if self.img:
             self._img_l.configure(image=img)
         self._name_l.configure(text=self.filename,)
-        self._intros = f'''代码 :{self.code} \n大小 :{sizetransform(self.size)}''' + f'''\n位置 :{self.location}'''
+        self._intros = f'''分享代码 :{self.code} \n大小 :{sizetransform(self.size)}''' + f'''\n位置 :{self.location}'''
         self._intro_l.configure(text=self._intros)
         swdlc.rmshare(code=self.code)
         swdlc.share(code=self.code,filepath=self.location + '''/''' + self.filename)
@@ -500,7 +504,7 @@ class ShareManageFrame(Frame):
         # super
         Frame.__init__(self,*args, **kwargs)
         # top lable
-        self._top_l = Label(text='ShareManage.', master=self)
+        self._top_l = Label(text='文件分享管理', master=self)
         # main scrolledtext
         self._main_s = ScrolledText(master=self)
         # new config area
@@ -510,10 +514,13 @@ class ShareManageFrame(Frame):
         self._newbot_f = Frame(master=self._new_f)
         self._file_e = Label(self._newtop_f, background='white')
         self._code_e = Entry(master=self._newbot_f)
-        self._file_l = Label(master=self._newtop_f, text='file')
-        self._code_l = Label(master=self._newbot_f, text='代码')
+        self._file_l = Label(master=self._newtop_f, text='文件')
+        self._code_l = Label(master=self._newbot_f, text='分享代码')
         self._fileset_b = Button(master=self._newtop_f, image=iconmap['FOLDER'], command=self.chosefile)
         self._add_b = Button(master=self._newbot_f, image=iconmap['CONFIRM'], command=self.add)
+        
+        self._main_s.config(state=DISABLED)
+
         # Window arrange ends
         self._count_user = 0
 
@@ -559,7 +566,7 @@ class ShareManageFrame(Frame):
         code = self._code_e.get()
         file = self._file_e['text']
         if code.strip() == '' or not os.path.isfile(file) :
-            messagebox.showerror('SWDChat','Bad code or file.')
+            messagebox.showerror('SWDChat','不合理的分享代码或文件.')
             return
         self._code_e.delete(0, END)
         self._file_e.config(text='')

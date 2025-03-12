@@ -1,2 +1,6 @@
 pillow
 pystray
+baidu_aip
+Pyaudio
+wave
+keyboard

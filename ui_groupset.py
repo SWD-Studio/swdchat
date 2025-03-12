@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2024  SWD Studio
+#    Copyright (C) 2020-2025  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on <http://swdstudio.github.com>.
 
-# 241129
-# ui:群组设置
+# 241129 - 250109
+# ui:会话设置
 from tkinter import *  # @UnusedWildImport
 from tkinter import messagebox
 from tkinter.ttk import *  # @UnusedWildImport
@@ -108,7 +108,7 @@ class GroupSetFrame(object):
         # top lable
         self._top_l = Label(text='在此创建新会话'
                           if self.method == NEW else 
-                          '在此修改群组'
+                          '在此修改会话'
                          , master=self.frame)
         # name config area
         self._name_f = Frame(master=self.frame)
@@ -146,7 +146,7 @@ class GroupSetFrame(object):
     
     def initsets(self, name:str, users:list, showuser:bool=True):
         '''
-name:群组名称
+name:会话名称
 users:[{'ip':str,'port':str,'username':str},...]
         '''
         self._initsets = [name, users]

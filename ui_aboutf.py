@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2024  SWD Studio
+#    Copyright (C) 2020-2025  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -15,11 +15,13 @@
 #    You can contact us on <http://swdstudio.github.com>.
 
 # ui:关于（首页）
-
+#250109
 from tkinter import *  # @UnusedWildImport
 from tkinter.ttk import *  # @UnusedWildImport
-from tkinter.scrolledtext import ScrolledText
 import logging
+
+
+from PIL import Image, ImageTk
 
 
 class AboutFrame(object):
@@ -33,32 +35,38 @@ class AboutFrame(object):
             self.frame = Frame()
         self.frame = Frame(master)
         # main scrolledtext
-        self._main_st = ScrolledText(self.frame)
+        self._main_st = Text(self.frame)
         # self._main_st.pack(fill=BOTH,expand=True)
-        self._main_st.tag_config('about', font=('Consolas', 14))  # 设置字体
-        self._main_st.insert(1.0, '''\
-        Welcome to SWDChat {v}
 
-        SWDChat {v} Copyright (C) 2020-2024 SWD Studio
+        
+        img_dir = './icons/welcome.jpg'
+        img_open = Image.open(img_dir)
+        self._img_tk = ImageTk.PhotoImage(img_open)
+        self._img_l = Label(image=self._img_tk)
 
-        This program comes with ABSOLUTELY NO WARRANTY.
-        This is free software, and you are welcome redistribute it under certain conditions.
-        See the GNU General Public License for more details.
-
-        You can contact us on <swdstudio.github.io>.
-        '''.format(v=version), 'about')
-        self._main_st.config(state='disabled')
+        self._main_st.config(font=('Consolas', 20))  # 设置字体
+        self._main_st.insert(1.0,f'''\
+        精简，但更精妙
+        SWDChat Version {version}''')
+        self.btns={}
+        
     
     def pack(self) -> None:
         self._main_st.pack(side='top', fill='both', expand=True)
+        
+        self._main_st.window_create(1.0,window=self._img_l)
+        for i in self.btns:
+            self._main_st.insert(END,'\n\t')
+            self._main_st.window_create(END,window=self.btns[i])
         self.frame.pack(fill='both', expand=True)
+        self._main_st.config(state='disabled')
 
 
 version = 'TESTVERSION'
 
 
 def config(vers:str) -> None:
-    '''设置我的版本'''
+    '''设置版本'''
     global version
     version = vers
 

@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2024  SWD Studio
+#    Copyright (C) 2020-2025  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -13,9 +13,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.ysepan.com.
-# 20241220
+# 20250307
 # 添加响应头字段Sha256
 # 添加检查：是否有文件跳跃攻击
+# 调整print语句的打印内容
 import socket
 import hashlib
 from json import dumps, loads
@@ -63,7 +64,7 @@ HTTPErrorProcessor.https_response = http_response
 
 
 def calcsha256(fpath: str)->str:
-    print(fpath)
+    print('calcsha256', fpath)
     with open(fpath, 'rb') as fp:
         fhash = hashlib.sha256()
         for chunk in iter(lambda: fp.read(4096), b''):
@@ -248,16 +249,19 @@ report为回调函数
         addr = t.netloc.split(':')
         ip = addr[0]
         port = int(addr[1])
-        code = t.path.split('/')[2]  # 获取文件分享代码
+        code = t.path.split('/')[2] #获取文件分享代码
         file = getfileinfo(ip, port, code)[0]
     try:
         file = (defpath + '/' + file).replace('//', '/')
+        
+        if os.path.commonprefix((os.path.realpath(file), os.path.realpath(defpath))) != os.path.realpath(defpath):
+            print('f1', file, os.path.realpath(file))
+            print('filedown', os.path.commonprefix((os.path.realpath(file), defpath)),
+                os.path.realpath(defpath))
+            return
     except Exception:
         ...
-    '''if os.path.commonprefix((os.path.realpath(file), os.path.realpath(defpath))) != os.path.realpath(defpath):
-        print(os.path.commonprefix((os.path.realpath(file), defpath)),
-              os.path.realpath(defpath))
-        return'''
+    
     HTTPErrorProcessor.https_response = http_response_backup
     HTTPErrorProcessor.http_response = http_response_backup
     f, h = urlretrieve(url, file, reporthook=reporthook if report !=  # @UnusedVariable

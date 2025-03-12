@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2024  SWD Code Group
+#    Copyright (C) 2020-2025  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -14,20 +14,24 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.ysepan.com.
 
-# 20241230
+# 20250306
 # SWDChat专用版
-# 图片更新
+# UI更新
+# 输入框支持多行输入:换行:Ctrl+Enter;发送:Enter
 from threading import Thread
 from tkinter import *  # @UnusedWildImport
-from tkinter.filedialog  import *  # @UnusedWildImport
+from tkinter.filedialog import *  # @UnusedWildImport
 from tkinter.scrolledtext import ScrolledText as ST
 from tkinter.ttk import *  # @UnusedWildImport
 from tkinter.messagebox import showerror
 from time import localtime, strftime, time
 
+from keyboard import is_pressed
+
 import swdlc as lc
 from swdlc import getip
 from scicons import iconmap
+import ui_voicerec
 # 消息传递格式(不同类型的消息可能略有不同)
 # {'username':用户名,'type':内容类型,'msg':内容,
 # 'addr':地址,'name':群组名,'chatid':群组id,
@@ -37,7 +41,8 @@ username = getip()  # 默认用户名
 myport = 0
 
 
-class StopSending(Exception):pass
+class StopSending(Exception):
+    pass
 
 
 def gettime():  # 获取系统时间
@@ -50,10 +55,10 @@ class SchatFrame(object):
     enable_TLS = True
     message_color = ('black', 'blue')
     enable_tips = True
-    name = ''  # name of this Schat
+    name = ''  # name of this SchatFrame
     disabled = False
 
-    def __init__(self, root:Tk, address:list, **options):
+    def __init__(self, root: Tk, address: list, **options):
         self.cw = Frame(root)
         self.address = address
         self.addrver = str(time())
@@ -68,7 +73,7 @@ class SchatFrame(object):
                 lc.send(kwargs, ip, port)
             except Exception as e:
                 self.mtext.config(state='normal')
-                self.mtext.insert('1.0', f'消息在发送到{ip}:{port}时发生错误。\n', 'red')
+                self.mtext.insert('1.0', f'消息在发送到{ip}: {port}时发生错误。\n', 'red')
                 self.mtext.config(state='normal')
 
         kwargs['username'] = username
@@ -125,14 +130,14 @@ class SchatFrame(object):
                           )
 
     def _sendmsg(self, send=True):
-        s = self.msg.get()
-        if not s:
+        s = self.msg.get(1.0, 'end')
+        if not s.strip():
             return
         try:
             s = self.sendcheck(s)
         except StopSending:
             pass
-        self.msg.delete(0, 'end')
+        self.msg.delete(1.0, 'end')
         return self._send(send,
                           type='msg',
                           msg=s,
@@ -144,18 +149,20 @@ class SchatFrame(object):
     def modify(self):
         pass
 
-    def click(self, *a):  # @UnusedVariable
-        if self.disabled:
-            return
-        self._click()
-
     def mainloop(self):
 
         def _click(*a):  # @UnusedVariable
-            try:
-                self._sendmsg()
-            except Exception as e:
-                showerror('ERROR', e)
+            flag = is_pressed('ctrl')
+            if self.disabled:
+                pass
+            elif flag:
+                self.msg.insert(INSERT, '\n')
+            else:
+                try:
+                    self._sendmsg()
+                except Exception as e:
+                    showerror('ERROR', e)
+            return 'break'
 
         def _click_img(*a):  # @UnusedVariable
             try:
@@ -175,31 +182,51 @@ class SchatFrame(object):
             except Exception as e:
                 showerror('ERROR', e)
 
-        self._click = _click
+        def _click_voice():
+            try:
+                ui_voicerec.voicetoplevel.deiconify()
+                ui_voicerec.voicetoplevel.attributes('-topmost', 1)
+            except Exception as e:
+                showerror('ERROR', e)
+
         self.fsend = Frame(self.cw)
         self.btns_f = Frame(self.fsend)
-        self.msg = Entry(self.fsend)
+        self.top_f = Frame(self.fsend)
+        self.msg = ST(self.fsend, height=4)
         self.mtext = ST(self.cw, state='disabled')
         self.mtext.tag_config('orange', foreground='orange')
         self.mtext.tag_config('red', foreground='red')
         self.mtext.tag_config('blue', foreground='blue')
-        self.buttons['msg'] = Button(self.btns_f, image=iconmap['POST'], command=_click)
-        self.buttons['img'] = Button(self.btns_f, image=iconmap['ADDIMG'], command=_click_img)
-        self.buttons['file'] = Button(self.btns_f, image=iconmap['ADDFILE'], command=_click_file)
-        self.buttons['modify'] = Button(self.btns_f, image=iconmap['SETTING'], command=_click_modify)
-        self.cw.bind("<Return>", _click)
-        self.msg.pack(side='left', fill=X, expand=True)
+        self.buttons['msg'] = Button(
+            self.btns_f, image=iconmap['POST'], command=_click)
+        self.buttons['img'] = Button(
+            self.btns_f, image=iconmap['ADDIMG'], command=_click_img)
+        self.buttons['file'] = Button(
+            self.btns_f, image=iconmap['ADDFILE'], command=_click_file)
+        self.buttons['modify'] = Button(
+            self.top_f, image=iconmap['SETTING'], command=_click_modify)
+        self.buttons['voice'] = Button(
+            self.btns_f, image=iconmap['MIC'], command=_click_voice)
+        self.info_l = Label(self.btns_f, text='    Enter发送, Ctrl+Enter换行')
+        self.name_l = Label(self.top_f, text='  ' + self.name, font=('黑体', 20))
+        self.msg.bind("<Return>", _click)
         self.buttons['msg'].pack(side='right')
         self.buttons['img'].pack(side='left')
         self.buttons['file'].pack(side='left')
-        self.buttons['modify'].pack(side='left')
-        self.btns_f.pack(side='right')
+        self.buttons['modify'].pack(side='right')
+        self.buttons['voice'].pack(side='left')
+        self.info_l.pack(side=LEFT)
+        self.name_l.pack(side=LEFT)
+        self.btns_f.pack(side=BOTTOM, fill=X)
+        self.top_f.pack(side=TOP, fill=X)
+        self.msg.pack(side=TOP, fill=X, expand=True)
         self.fsend.pack(fill=X, expand=False)
         self.mtext.pack(fill=BOTH, expand=True)
 
 
-def init(port:int=0):
+def init(port: int=0):
     global myport
-    if lc.init(port):return 1
+    if lc.init(port):
+        return 1
     myport = lc.httpd.server_port  # 本机使用的端口(int) @UndefinedVariable
     return 0

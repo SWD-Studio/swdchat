@@ -1,4 +1,4 @@
-#    Copyright (C) 2020-2024  SWD Studio
+#    Copyright (C) 2020-2025  SWD Studio
 
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -36,18 +36,23 @@ from collections import deque
 from tkinter.messagebox import askyesnocancel, showerror, showinfo, askokcancel
 from time import time
 from json import dumps, loads
+from os.path import expandvars
+import webbrowser
 
 import pystray
 from PIL import Image  # @Reimport
 
 import swdlc as lc
 from swdlc import getip
+import ui_voicerec
 import schat
 import ui_groupset
 import ui_aboutf
 import ui_mainsetf
 import scwidgets
 import filemanager
+import multiplatform
+
 # 系统托盘
 
 
@@ -58,15 +63,16 @@ def _quit():             # 自定义回调函数
 
 
 def hide_window(*args):
-    print('bbbbbbb')
     mw.withdraw()
-    icon.notify('窗口已隐藏到托盘区', 'SWDChat')
+    if not hidewindowdefault:
+        icon.notify('窗口已隐藏到托盘区', 'SWDChat')
 
 
 # 创建图标对象
 icon_image = Image.open("logo.ico")           # 打开 ICO 图像文件并创建一个 Image 对象
-menu = (pystray.MenuItem(text='打开窗口', action=mw.deiconify),
-        pystray.Menu.SEPARATOR, pystray.MenuItem(text='退出', action=_quit))  # 创建菜单项元组
+menu = (pystray.MenuItem(text='打开窗口', action=mw.deiconify, default=True),
+        pystray.Menu.SEPARATOR, 
+        pystray.MenuItem(text='退出', action=_quit))  # 创建菜单项元组
 # 创建 PyStray Icon 对象，并传入关键参数
 icon = pystray.Icon("swdchat", icon_image, "SWDChat", menu)
 
@@ -89,15 +95,14 @@ f2id = {}  # str(frame):chatid
 
 port = 36144  # 首选端口
 imgs = deque()  # 存放PhotoImage对象
-version = '2.1.0'  # 版本号
+version = '2.2.0'  # 版本号
 if lc.getip() == '127.0.0.1':  # 若未连接互联网，地址应为127.0.0.1
     print('程序无法启动,请检查网络连接.')
     system('pause>>nul')
 if schat.init(port):  # 首选端口已被占用
     schat.init(0)  # 使用随机端口
 port = schat.myport  # 本机使用的端口(int)
-lc.downpath(False)  # 不使用swdlc提供的默认路径
-
+hidewindowdefault=None
 
 class Recdict(object):
     flag = 0
@@ -126,6 +131,7 @@ class Recdict(object):
 ui_groupset.ipconfig(ip=lc.getip(), port=port)
 ui_aboutf.config(vers=version)
 ui_mainsetf.ipconfig(ip=lc.getip(), port=port)
+ui_mainsetf.config(version)
 system('mkdir img>>nul')  # 创建img文件夹
 mw.title('SWDChat %s' % version)  # 设定标题
 mw.iconbitmap('logo.ico')  # 设定图标
@@ -144,21 +150,25 @@ username_l = Label(msg_f, text='用户名：%s' % schat.username)  # 用户名�
 username_l.pack(fill=X)
 temp_userlist = []
 
-about_f = ui_aboutf.AboutFrame()
-about_f.pack()
-user_n.add(about_f.frame, text='{:>12}'.format('关于'))  # 添加到选项卡
-
 # set_f 设置
 set_f = ui_mainsetf.MainSetFrame(username=schat.username)
 set_f.pack()
-user_n.add(set_f.frame, text='{:>12}'.format('设置'))  # 添加到选项卡
+def quitfunc():
+    icon.stop()
+    mw.destroy()
+set_f.del_b.config(command=quitfunc)
 
 
 @set_f.setting
-def setting(name):  # 保存设置 @UnusedVariable
-
+def setting():  # 保存设置 @UnusedVariable
+    global hidewindowdefault
     schat.username = set_f.username
-    lc.downpath(set_f.username)
+    if not set_f.default_path:
+        set_f.default_path = '.'
+    lc.downpath(set_f.default_path)
+    hidewindowdefault=set_f.del_option_v
+    set_dict={'username':set_f.username, 'path':set_f.default_path, 'del_option':hidewindowdefault}
+    system(f'echo {dumps(set_dict)}>{cache_path}\\set.dat')
     username_l.config(text='用户名：' + schat.username)
 
 # set_f end
@@ -179,7 +189,11 @@ def new(newn, userlist):  # 创建新群组
     frm = cteframe(t)  # 创建新Frame、Schat对象等
     so = uso[f2id[str(frm)]]
     so.name = newn  # 修改群组名
+    so.name_l.config(text=newn)
     so.sendnew()  # 向各用户发送创建新群组
+    bakobj = so.sendnew(False)
+    print('new dump',dumps(bakobj,ensure_ascii=False))
+    system('echo {}>>{}\\bak.dat'.format(dumps(bakobj,ensure_ascii=False),cache_path))
     user_n.insert(2, frm,
                   text='{:>14}'.format(newn))  # 添加到选项卡
     # newname_e.delete(0, 'end')#清空
@@ -188,22 +202,17 @@ def new(newn, userlist):  # 创建新群组
 
 
 # new_b.pack()
-user_n.insert(1, new_f.frame, text='{:>12}'.format('创建'))  # 添加到选项卡
 # new_f end
 
 # modify_f
 modify_id = -1.0  # 当前正修改的chatid
 modify_f = ui_groupset.GroupSetFrame(master=msg_f, method=ui_groupset.CONFIG)
-user_n.insert(1, modify_f.frame, text='{:>12}'.format('修改'))  # 添加到选项卡
-user_n.hide(modify_f.frame)
 
 # file manager
 filemanager.init()
 lc.downpath('.')
 filedw=filemanager.DownloadManageFrame()
 filesh=filemanager.ShareManageFrame()
-user_n.insert(1, filedw, text='{:>12}'.format('文件下载'))  # 添加到选项卡
-user_n.insert(1, filesh, text='{:>12}'.format('文件分享'))  # 添加到选项卡
 filedw.pack(False)
 filesh.pack(False)
 # file manager end
@@ -213,21 +222,30 @@ def modify(name, userlist):
     if modify_id == -1.0:
         user_n.hide(modify_f.frame)
         return
-    user_n.hide(modify_f.frame)
+    # user_n.hide(modify_f.frame)
+    user_n.select(uf[modify_id])
     so = uso[modify_id]
     so.name = name
-    # print(userlist)
+    so.name_l.config(text=name)
     so.address = userlist
     so.addrver = str(time())
     so.sendnew()
     newmsg = so.sendnew(False)
     print(temp_userlist, userlist)
     for i in temp_userlist:
-        print(i)
         if i not in userlist:
             Thread(target=lc.send,
                    args=(newmsg, *i)).start()
 # end modify
+
+about_f = ui_aboutf.AboutFrame()
+#--------------注册按钮--------------
+
+about_f.btns['new']=Button(master=about_f.frame,width=15,text='新建会话',command=lambda : user_n.select(new_f.frame))
+about_f.btns['newfile']=Button(master=about_f.frame,width=15,text='新建文件分享',command=lambda : user_n.select(filesh))
+about_f.btns['learn']=Button(master=about_f.frame,width=15,text='查看文档',command=lambda : multiplatform.open_file('./HELP.html'))
+about_f.btns['surf']=Button(master=about_f.frame,width=15,text='访问我们的主页',command=lambda : webbrowser.open(url='https://github.com/SWD-Studio/swdchat',new=2))
+about_f.pack()
 
 
 def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Schat对象等
@@ -235,10 +253,11 @@ def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Scha
         return uf[chatid]
     msgs = schat.SchatFrame(mw, address=list(map(list, addr)))  # 创建新对象
     if obj != None:
-        bakobj = dict(obj.dict)
+        bakobj = obj.dict
         bakobj['type'] = 'new'
-        system('echo %s>>bak.dat' % dumps(bakobj))
-
+        print('457',dumps(bakobj,ensure_ascii=False))
+        system('echo {}>>{}\\bak.dat'.format(dumps(bakobj,ensure_ascii=False),cache_path))
+    
     def _modify(self):
         global modify_id, temp_userlist
         modify_id = self.chatid
@@ -248,7 +267,6 @@ def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Scha
                            'port': userlist[i][1],
                            'username': self.usernames['{}:{}'.format(*userlist[i])],
                            }
-        # print(userlist)
         temp_userlist = self.address[:]
         modify_f.initsets(msgs.name, userlist)
         modify_f.reset()
@@ -257,7 +275,12 @@ def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Scha
             ans = askokcancel('提示', '确定要删除该群组记录吗？')
             if ans:
                 user_n.forget(uf[self.chatid])
-                user_n.hide(modify_f.frame)
+                delobj=uso[self.chatid].sendnew(False)
+                delobj['type']='del'
+                delobj['addrver']=str(time())
+                system('echo {}>>{}\\bak.dat'.format(dumps(delobj, ensure_ascii=False), cache_path))
+                # user_n.hide(modify_f.frame)
+                user_n.select(about_f.frame)
 
         modify_f.cancel(_cancel)
         user_n.select(modify_f.frame)
@@ -283,7 +306,7 @@ def cteframe(addr, addrver='0', chatid=None, obj=None):  # 创建新Frame、Scha
 
 
 def sharedown(filename: str, url: str, path: str):  # 下载分享文件
-    # print('fd',path)
+    print('fd',path)
     if path[0] == '/':  # 未设置默认路径
         path = '.' + path  # 把当前路径作为默认路径
 
@@ -347,7 +370,8 @@ def receive(obj):  # 接收消息
                args=(uso[obj['chatid']].sendnew(False), *obj['from'].split(':'))).start()
     color = 'black'  # 默认颜色
     nowtime = schat.gettime()  # 获取当前时间
-    user_n.insert(2, frm, text='{:>14}'.format(obj['name']))  # 把当前群组移到第一个
+    user_n.insert(1, frm, text='{:>14}'.format(obj['name']))  # 把当前群组移到第一个
+    so.name_l.config(text=obj['name'])
     so.name = obj['name']  # 修改群组名称(若该群组对象已存在则无实际作用)
     so.usernames[from_] = obj['username']
     print(obj.dict, '\n', so.usernames)
@@ -388,14 +412,14 @@ def receive(obj):  # 接收消息
 
         def _downbf(*a):  # @UnusedVariable
             sharedown(filename, obj['url'],
-                      set_f.default_path + '/' + filename)
+                      filename)
 
         fb = Button(uf[obj['chatid']], text='下载 %s' %
                     filename, command=_downbf)
         mtext.insert(1.0, '\n')
         mtext.window_create('1.0', window=fb)
-    elif obj['type'] == 'msg':  # 用'msg'表示文字消息
-        s += obj['msg'] + '\n'
+    elif obj['type'] == 'msg':  # 用'msg'表示文本消息
+        s += obj['msg']
     else:
         color = 'red'
         s += '当前SWDChat版本过低，无法查看此消息。\n'
@@ -415,7 +439,7 @@ config_tabs = ('关于', '设置', '创建', '修改', '文件下载', '文件�
 
 
 def ntd(*a):  # 处理选项卡单击事件 @UnusedVariable
-    print('aaaaaa')
+    
     index = user_n.index('current')
     st = user_n.tab(index)
     st = st['text'].split()[-1]
@@ -426,29 +450,62 @@ def ntd(*a):  # 处理选项卡单击事件 @UnusedVariable
         if st == '设置':
             set_f.reset()
         return
+    
+    # def _voice(self):
+    #     ui_voicerec.voicetoplevel.target=self.msg
+    
     c = user_n.tab(uf[f2id[fstr]], 'text')
     user_n.tab(uf[f2id[fstr]], text=c.replace('!', ' ', 1))
 
 
-def enter(*a):  # 处理回车键事件(调用'发送'按钮) @UnusedVariable
+def get_current_chatid():  # 获取当前chatid
     index = user_n.index('current')
     st = user_n.tab(index)
     fstr = user_n.tabs()[index]
     st = st['text'].split()[-1]
     if st in config_tabs:
-        return
-    uso[f2id[fstr]].click()
+        return ''
+    return f2id[fstr]
 
+
+def voice():
+    chatid=get_current_chatid()
+    if chatid:
+        so=uso[chatid]
+        return so.msg
+ui_voicerec.voicetoplevel.get_current_msg=voice
+ui_voicerec.voicetoplevel.pack()
+ui_voicerec.voicetoplevel.withdraw()
+
+user_n.add(about_f.frame, text='{:>12}'.format('关于'))  # 添加到选项卡
+user_n.add(set_f.frame, text='{:>12}'.format('设置'))  # 添加到选项卡
+user_n.insert(1, new_f.frame, text='{:>12}'.format('创建'))  # 添加到选项卡
+user_n.insert(1, modify_f.frame, text='{:>12}'.format('修改'))  # 添加到选项卡
+user_n.hide(modify_f.frame)
+user_n.insert(1, filedw, text='{:>12}'.format('文件下载'))  # 添加到选项卡
+user_n.insert(1, filesh, text='{:>12}'.format('文件分享'))  # 添加到选项卡
+
+cache_path='%appdata%\\SWD\\SWDChat\\chat2'
+try:
+    system(f'mkdir {cache_path}>>nul')  # 创建缓存文件夹
+    fp=open(expandvars(f'{cache_path}\\set.dat'))
+    set_dict=loads(fp.readline())
+    set_f.setup(**set_dict)
+    setting()
+except Exception as e:
+    print('settings bak exception:', type(e), e)
+    system(f'del {cache_path}\\set.dat  /F /Q')
 
 try:
-    system('copy bak.dat _bak1')
+    system(f'copy {cache_path}\\bak.dat _bak1')
     f = open('_bak1')
     t = {}
     for i in f.readlines():
         try:
             obj = loads(i)
-        except Exception:
-            pass
+        except Exception as e:
+            print(type(e),e)
+            continue
         print('bakobj:', obj)
         if [lc.getip(), port] not in obj['addr']:
             continue
@@ -457,27 +514,24 @@ try:
         elif obj['addrver'] > t[obj['chatid']]['addrver']:
             t[obj['chatid']] = obj
     for i in t:
-        receive(t[i])
-    system('del bak.dat /F /Q')
+        if t[i]['type']!='del':
+            receive(t[i])
+    system(f'del {cache_path}\\bak.dat /F /Q')
     for i in t:
-        system('echo %s>>bak.dat' % dumps(t[i]))
+        if t[i]['type']!='del':
+            system('echo {}>>{}\\bak.dat'.format(dumps(t[i],ensure_ascii=False),cache_path))
     f.close()
     system('del _bak1 /F /Q')
 except Exception as e:
-    print('bak exception:', e)
-# 加载动态链接库
-# try:
-#     showinfodll = ctypes.WinDLL('./showinfo.dll')
-#     info = showinfodll.info
-# except Exception:
-#     info = lambda *args, **kwargs:...  # @UnusedVariable
-mw.bind("<Return>", enter)
+    print('groups bak exception:', type(e), e)
+    system(f'del {cache_path}\\bak.dat  /F /Q')
+    system(f'del _bak1  /F /Q')
+# mw.bind("<Return>", enter)
 mw.bind("<<NotebookTabChanged>> ", ntd)
 user_n.add(about_f.frame, text='{:>12}'.format('关于'))
 user_n.pack(fill=BOTH, expand=True)
 msg_f.pack(fill=BOTH, expand=True)
 myip = lc.getip()
-hidewindowdefault=None
 def unmap_switch(*args):
     global hidewindowdefault
     if hidewindowdefault==None:
@@ -487,9 +541,11 @@ def unmap_switch(*args):
     if hidewindowdefault:
         hide_window()
     else:
+        icon.stop()
         mw.destroy()
 # mw.bind("<Unmap>", hide_window)
 ui_snapshot.delete()
+
 mw.protocol("WM_DELETE_WINDOW", unmap_switch)
 mw.deiconify()
 mainloop()
