@@ -2,6 +2,13 @@
 
 ## Change log
 
+#### [v2.2.0](https://github.com/swdstudio/swdchat/releases/tag/v2.2.0 "前往")
+1. 新增语音识别功能
+2. 新增“欢迎”界面
+3. 修改了群组消息界面的UI设计，使之更符合一般习惯
+4. 群组和设置的持久化
+5. bugs fixed
+
 ####  [v2.1.0](https://github.com/swdstudio/swdchat/releases/tag/v2.1.0 "前往") 
 1. 新增托盘区图标
 2. 新增文件分享与下载页面
