@@ -12,7 +12,7 @@
 ## 一个免费，自由，开源的局域网去中心化信息传输交流工具
 ![preview](./doc/welcome.png)
 
-## 跳转至[用户文档](./HELP.html)
+## 跳转至[用户文档](./HELP.md)
 
 ## 特点
 
@@ -54,3 +54,4 @@ Python解释器：CPython 3.8.6rc1 for Windows(x64)
 
 详见[第三方引用声明](./ThirdPartyNotices.md)
 ### See [Change Log](./CHANGELOG.md)
+
