@@ -13,7 +13,8 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #    You can contact us on swd-go.ysepan.com.
-# 20250307
+# 20260312
+# 增强稳定性
 # 添加响应头字段Sha256
 # 添加检查：是否有文件跳跃攻击
 # 调整print语句的打印内容
@@ -25,7 +26,7 @@ import threading
 import ssl
 from http import HTTPStatus
 import shutil
-from urllib.request import urlopen, urlretrieve, HTTPErrorProcessor
+from urllib.request import urlopen, urlretrieve
 from urllib.parse import quote, unquote, urlparse
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from sys import stderr
@@ -51,16 +52,6 @@ class InvalidAddress(Exception):
 
 fmap = {}  # 记录本机分享代码对应的文件，格式为code:fpath
 stimes = {}  # 记录分享代码可用次数
-
-http_response_backup = HTTPErrorProcessor.http_response
-
-
-def http_response(self, request, response):  # 防止非2XX响应码报错 @UnusedVariable
-    return response
-
-
-HTTPErrorProcessor.http_response = http_response
-HTTPErrorProcessor.https_response = http_response
 
 
 def calcsha256(fpath: str)->str:
@@ -166,9 +157,9 @@ class SHRH(BaseHTTPRequestHandler):
             res = loads(body)  # 从json转换为Python对象
             resp = receive_func(res)  # 调用用户设定的函数,传入收到的对象
             if resp:
-                self.send_response(resp[0])
+                self.send_response(200)
                 self.end_headers()
-                self.wfile.write(dumps(resp[1]).encode())
+                self.wfile.write(dumps(resp).encode())
             else:
                 self.send_response(200)
                 self.end_headers()
@@ -260,13 +251,10 @@ report为回调函数
                 os.path.realpath(defpath))
             return
     except Exception:
-        ...
+        pass
     
-    HTTPErrorProcessor.https_response = http_response_backup
-    HTTPErrorProcessor.http_response = http_response_backup
     f, h = urlretrieve(url, file, reporthook=reporthook if report !=  # @UnusedVariable
                        None else None)
-    HTTPErrorProcessor.http_repsonse = HTTPErrorProcessor.https_response = http_response
     file = open(file)
     file.close()
 
