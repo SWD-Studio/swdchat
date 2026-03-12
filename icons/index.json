@@ -9,5 +9,7 @@
     "SETTING":"MaterialSymbolsSettings.png",
     "DELETE":"MaterialSymbolsDeleteOutline.png",
     "FOLDER":"MaterialSymbolsFolderOutlineSharp.png",
-    "LEFT":"IconParkOutlineLeftSmall.png"
+    "LEFT":"IconParkOutlineLeftSmall.png",
+    "MIC":"MaterialSymbolsMic.png",
+    "STOPMIC":"MaterialSymbolsSquareRounded.png"
 }
